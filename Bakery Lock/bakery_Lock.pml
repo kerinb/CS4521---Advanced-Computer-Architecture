@@ -1,5 +1,5 @@
-int NUM_THREADS = 2;
-byte choosing[NUM_THREADS];
+int MAX_NUM_THREADS = 2;
+byte choosingThread[NUM_THREADS];
 byte ticketNumber[NUM_THREADS];
 
 proctype customer(){
@@ -11,8 +11,8 @@ proctype customer(){
 		
 		int i, max = 0;	
 		
-		for(i : 0 .. (NUM_THREADS - 1)){
-			if 
+		for(i : 0 .. (NUM_THREADS - 1)){ // loop across all threads that are active.
+			if 			 // max is set to 0, if there is a ticketNumber that is greater than max, max = ticketNumber
 			:: ticketNumber[i] > max -> max = ticketNumber[i];
 			:: else;
 			fi;
@@ -25,11 +25,13 @@ proctype customer(){
 		int j;
 		for(j : 0 .. (NUM_THREADS - 1)){
 			// Wait for our turn to come! 
+			// if choosing[j] == 0, then we are on another thread and we must wait until it is our turn (choosing[j] == 1) threads turn to execute
 			do
 			:: (choosing[j] == 0) -> break;
 			od;
 
-			((ticketNumber[j] == 0) || ((ticketNumber[j] >= ticketNumber[id]) && (( ticketNumber[j] != ticketNumber[id] || (j >= id))));
+			// dont continue UNLESS ticketNUmber[j] = 0 OR if (ticketNumber[j] >= ticketNumber[id] AND (ticketNumber[j] != ticketNumber[id]) OR (j >= id))
+			((ticketNumber[j] == 0) || ((ticketNumber[j] >= ticketNumber[id]) && ((ticketNumber[j] != ticketNumber[id] || (j >= id))));
 		}	
 
 		// This is the critical section of the code! 
