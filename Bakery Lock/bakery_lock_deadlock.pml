@@ -20,7 +20,7 @@ proctype customer(){
 
 		// Take a ticket
 		ticketNumber[id] = max + 1;
-		choosing[id] = 0;
+		// choosing[id] = 0; // To remove deadlock from program - remove comment from this line! 
 
 		int j;
 		for(j : 0 .. (NUM_THREADS - 1)){
@@ -30,7 +30,6 @@ proctype customer(){
 			:: (choosing[j] == 0) -> break;
 			od;
 
-			// dont continue UNLESS ticketNUmber[j] = 0 OR if (ticketNumber[j] >= ticketNumber[id] AND (ticketNumber[j] != ticketNumber[id]) OR (j >= id))
 			((ticketNumber[j] == 0) || ((ticketNumber[j] >= ticketNumber[id]) && ((ticketNumber[j] != ticketNumber[id] || (j >= id))));
 		}	
 
@@ -48,3 +47,4 @@ init{
 	run customer();
 	(_nr_pr == 1);
 }
+

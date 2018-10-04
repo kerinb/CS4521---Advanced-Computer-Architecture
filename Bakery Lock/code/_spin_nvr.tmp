@@ -1,0 +1,21 @@
+never starv {    /* !(([] (<> ((threadReachedCriticalSection[0]==3)))) && (<> ((threadReachedCriticalSection[1]==3)))) */
+T0_init:
+	do
+	:: (! (((threadReachedCriticalSection[1]==3)))) -> goto accept_S2
+	:: (! (((threadReachedCriticalSection[0]==3)))) -> goto accept_S8
+	:: (1) -> goto T0_S5
+	od;
+accept_S2:
+	do
+	:: (! (((threadReachedCriticalSection[1]==3)))) -> goto accept_S2
+	od;
+accept_S8:
+	do
+	:: (! (((threadReachedCriticalSection[0]==3)))) -> goto accept_S8
+	od;
+T0_S5:
+	do
+	:: (! (((threadReachedCriticalSection[0]==3)))) -> goto accept_S8
+	:: (1) -> goto T0_S5
+	od;
+}

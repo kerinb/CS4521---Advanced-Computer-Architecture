@@ -1,12 +1,13 @@
 int MAX_NUM_THREADS = 2;
 byte choosingThread[NUM_THREADS];
 byte ticketNumber[NUM_THREADS];
+int test_in_critical_section;
 
 proctype customer(){
 	byte id = _pid - 1; 
-	
 	int numIters;
 	for(numIters : 0 .. 2){
+		// Comment the line below in order to break safety/mutual exclusion property
 		choosing[id] = 1; // Threads request lock
 		
 		int i, max = 0;	
@@ -24,19 +25,18 @@ proctype customer(){
 
 		int j;
 		for(j : 0 .. (NUM_THREADS - 1)){
-			// Wait for our turn to come! 
-			// if choosing[j] == 0, then we are on another thread and we must wait until it is our turn (choosing[j] == 1) threads turn to execute
 			do
 			:: (choosing[j] == 0) -> break;
 			od;
 
-			// dont continue UNLESS ticketNUmber[j] = 0 OR if (ticketNumber[j] >= ticketNumber[id] AND (ticketNumber[j] != ticketNumber[id]) OR (j >= id))
 			((ticketNumber[j] == 0) || ((ticketNumber[j] >= ticketNumber[id]) && ((ticketNumber[j] != ticketNumber[id] || (j >= id))));
 		}	
 
 		// This is the critical section of the code! 
 		// It will do some - call a function/ update a data stucture ETC
-		
+		test_in_critical_section++;
+		assert(test_in_critical_section);
+		test_in_critical_section--;
 		// Release the lcok by clearing our ticket in ticketNumber
 		ticketNumber[id] = 0;
 	}
