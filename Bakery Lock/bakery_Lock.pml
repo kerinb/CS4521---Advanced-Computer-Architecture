@@ -1,5 +1,5 @@
 int MAX_NUM_THREADS = 2;
-byte choosingThread[MAX_NUM_THREADSNUM_THREADS];
+byte choosingThread[MAX_NUM_THREADS];
 byte ticketNumber[MAX_NUM_THREADS];
 
 proctype customer(){
@@ -7,11 +7,11 @@ proctype customer(){
 	
 	int numIters;
 	for(numIters : 0 .. 2){
-		choosing[id] = 1; // Threads request lock
+		choosingThread[id]=1; // Threads request lock
 		
-		int i, max = 0;	
+		int i, max=0;	
 		
-		for(i : 0 .. (MAX_NUM_THREADSNUM_THREADS - 1)){ // loop across all threads that are active.
+		for(i : 0 .. (MAX_NUM_THREADS - 1)){ // loop across all threads that are active.
 			if 			 // max is set to 0, if there is a ticketNumber that is greater than max, max = ticketNumber
 			:: ticketNumber[i] > max -> max = ticketNumber[i];
 			:: else;
@@ -20,14 +20,14 @@ proctype customer(){
 
 		// Take a ticket
 		ticketNumber[id] = max + 1;
-		choosing[id] = 0;
+		choosingThread[id] = 0;
 
 		int j;
-		for(j : 0 .. (MAX_NUM_THREADSNUM_THREADS - 1)){
+		for(j : 0 .. (MAX_NUM_THREADS - 1)){
 			// Wait for our turn to come! 
-			// if choosing[j] == 0, then we are on another thread and we must wait until it is our turn (choosing[j] == 1) threads turn to execute
+			// if choosing[j] == 0, then we are on another thread and we must wait until it is our turn (choosingThread[j] == 1) threads turn to execute
 			do
-			:: (choosing[j] == 0) -> break;
+			:: (choosingThread[j] == 0) -> break;
 			od;
 
 			// dont continue UNLESS ticketNUmber[j] = 0 OR if (ticketNumber[j] >= ticketNumber[id] AND (ticketNumber[j] != ticketNumber[id]) OR (j >= id))
@@ -43,7 +43,7 @@ proctype customer(){
 	printf("Process %d has competed %d iterations of this loop", id, numIters);
 }
 
-init{
+init {
 	run customer();
 	run customer();
 	(_nr_pr == 1);
