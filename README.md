@@ -11,3 +11,12 @@ This folder contains the code for the bakery lock, as well as several mutations 
 4. liveness
 
 GRADE RECIEVED: TBC
+
+## Tutorial 2 - Implement and compare the performance of (i) a binary search tree (BST) protected by a lock (ii) a lockless BST using HLE and (iii) a lockless BST using RTM.
+files in this folder include:
+1. helper.cpp
+2. helper.h
+3. tsxBST.cpp 
+4. makefile
+5. README.md
+6. PDF file of tutorial specifications
