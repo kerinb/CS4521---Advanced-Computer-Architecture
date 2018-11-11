@@ -26,7 +26,7 @@ using namespace std;
 // METHOD 3: RTM
 //
 
-#define METHOD              2	
+#define METHOD              2
 #define PREFILL             0                   // pre-fill with odd integers 0 .. maxKey-1 => 0: perfect 1: right list 2: left list
 
 #define MINKEY              (16)               
