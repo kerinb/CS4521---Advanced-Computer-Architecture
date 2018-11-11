@@ -363,7 +363,7 @@ UINT64 getWallClockMS() {
 //
 // setThreadCPU
 //
-void createThread(THREADH *threadH, WORKERF worker, void *arg) {
+void createThread(THREADH *threadH, WORKERF, void *arg) {
 #ifdef WIN32
     *threadH = CreateThread(NULL, 0, worker, arg, 0, NULL);
 #elif __linux__
