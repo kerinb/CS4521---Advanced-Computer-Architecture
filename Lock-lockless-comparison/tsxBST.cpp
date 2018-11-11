@@ -247,7 +247,7 @@ public:
 private:                                                    // private
 
     ALIGN(64) volatile long lock;                           // lock
-
+	int test;
 #if METHOD == 2
     int abortNum;
 #endif
@@ -280,7 +280,6 @@ BST::BST(UINT nt)  {
     root = NULL;                                                        //
 
     lock = 0;
-
 #if METHOD == 2
     abortNum = 0;
 #endif
@@ -363,7 +362,10 @@ int BST::contains(INT64 key) {
     PerThreadData *pt = (PerThreadData*)TLSGETVALUE(tlsPtIndx);
 
 #if METHOD == 1
+	cout << "acquire lock - BST contains" << endl;
     while (_InterlockedExchange(&lock, 1)) {
+    test++;
+    cout << test << endl;
         do {
             _mm_pause();
         } while (lock);
@@ -392,6 +394,7 @@ int BST::contains(INT64 key) {
         } else {
         
 #if METHOD == 1
+	cout << "release lock - BST contains" << endl;
     lock = 0;
 #elif METHOD == 2
 	cout << "release lock - BST contains" << endl;
@@ -406,6 +409,7 @@ int BST::contains(INT64 key) {
     }
 
 #if METHOD == 1
+cout << "release lock 2 - BST contains" << endl;
     lock = 0;
 #elif METHOD == 2
 	cout << "release lock 2 - BST contains" << endl;
@@ -431,7 +435,10 @@ int BST::addTSX(Node *n) {
     PerThreadData *pt = (PerThreadData*)TLSGETVALUE(tlsPtIndx);
 
 #if METHOD == 1
+	cout << "acquire lock - add tsx" << endl;
     while (_InterlockedExchange(&lock, 1)) {
+        test++;
+	    cout << test << endl;
         do {
             _mm_pause();
         } while (lock);
@@ -460,6 +467,7 @@ int BST::addTSX(Node *n) {
             pp = &p->right;
         } else {
 #if METHOD == 1
+	cout << "release lock - add tsx" << endl;
             lock = 0;
 #elif METHOD == 2
 	cout << "release lock - add TSX" << endl;
@@ -476,6 +484,7 @@ int BST::addTSX(Node *n) {
 
     *pp = n;
 #if METHOD == 1
+	cout << "release lock 2 - add TSX" << endl;
     lock = 0;
 #elif METHOD == 2
 	cout << "release lock 2 - add TSX" << endl;
@@ -501,7 +510,10 @@ Node* BST::removeTSX(INT64 key) {
     PerThreadData *pt = (PerThreadData*)TLSGETVALUE(tlsPtIndx);
 
 #if METHOD == 1
+    cout << "acquire lock - remove tsx" << endl;
     while (_InterlockedExchange(&lock, 1)) {
+        test++;
+	    cout << test << endl;
         do {
             _mm_pause();
         } while (lock);
@@ -536,6 +548,7 @@ Node* BST::removeTSX(INT64 key) {
 
     if (p == NULL) {
 #if METHOD == 1
+	cout << "release lock - remove tsx" << endl;
         lock = 0;
 #elif METHOD == 2
 	cout << "release lock - remove TSX" << endl;
@@ -576,6 +589,7 @@ Node* BST::removeTSX(INT64 key) {
     }
 
 #if METHOD == 1
+	cout << "release lock 2 - remove tsx" << endl;
     lock = 0;
 #elif METHOD == 2
 	cout << "remove lock 2 - remove TSX" << endl;
