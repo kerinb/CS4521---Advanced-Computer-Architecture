@@ -250,6 +250,10 @@ private:                                                    // private
     ALIGN(64) volatile long lock;                           // lock
 #endif
 
+#if METHOD == 2 || 3
+    int abortNum;
+#endif
+
     int addTSX(Node*);                                      // add key into tree {joj 25/11/15}
     Node* removeTSX(INT64);                                 // remove key from tree {joj 25/11/15}
 
@@ -279,6 +283,9 @@ BST::BST(UINT nt)  {                                                    //
 
 #if METHOD == 1
     lock = 0;
+#endif
+#if METHOD == 2 || 3
+    abortNum = 0;
 #endif
 
 }
@@ -366,6 +373,14 @@ int BST::contains(INT64 key) {
     }
 #endif
 
+#if METHOD == 2
+    while(_InterlockedExchange_HLEAcquire(&lock, 1) == 1){ // this should be mapped onto a linux equivelant!
+        do {
+            _mm_pause();
+        } while(lock);
+    }
+#endif
+
     Node *p = root;
     STAT4(UINT64 d = 0);
     while (p) {
@@ -378,6 +393,11 @@ int BST::contains(INT64 key) {
 #if METHOD == 1
             lock = 0;
 #endif
+
+#if METHOD == 2
+    _Store_HLERelease(&lock, 0);
+#endif
+
             STAT4(DSUM);
             return 1;
         }
@@ -386,6 +406,11 @@ int BST::contains(INT64 key) {
 #if METHOD == 1
     lock = 0;
 #endif
+
+#if METHOD == 2
+    _Store_HLERelease(&lock, 0);
+#endif
+
     STAT4(DSUM);
     return 0;
 }
@@ -410,6 +435,14 @@ int BST::addTSX(Node *n) {
     }
 #endif
 
+#if METHOD == 2
+    while(_InterlockedExchange_HLEAcquire(&lock, 1)){
+        do {
+            _mm_pause();
+        } while(lock);
+    }
+#endif
+
     Node* volatile *pp = &root;
     Node *p = root;
     STAT4(UINT64 d = 0);
@@ -423,6 +456,11 @@ int BST::addTSX(Node *n) {
 #if METHOD == 1
             lock = 0;
 #endif
+
+#if METHOD == 2
+    _Store_HLERelease(&lock, 0);
+#endif
+
             STAT4(DSUM);
             return 0;
         }
@@ -433,6 +471,11 @@ int BST::addTSX(Node *n) {
 #if METHOD == 1
     lock = 0;
 #endif
+
+#if METHOD == 2
+    _Store_HLERelease(&lock, 0);
+#endif
+
     STAT4(DSUM);
     return 1;
 }
@@ -457,6 +500,14 @@ Node* BST::removeTSX(INT64 key) {
     }
 #endif
 
+#if METHOD == 2
+    while (_InterlockedExchange_HLEAcquire(&lock, 1)){
+    	do {
+    		_mm_pause();
+    	} while(lock);
+    }
+#endif
+
     Node* volatile *pp = &root;
     Node *p = root;
     STAT4(UINT64 d = 0);
@@ -476,6 +527,11 @@ Node* BST::removeTSX(INT64 key) {
 #if METHOD == 1
         lock = 0;
 #endif
+
+#if METHOD == 2
+	_Store_HLERelease(&lock, 1);
+#endif
+
         STAT4(DSUM);
         return NULL;
     }
@@ -510,6 +566,10 @@ Node* BST::removeTSX(INT64 key) {
 #if METHOD == 1
     lock = 0;
 #endif
+#if METHOD == 2
+	_Store_HLERelease(&lock, 0);
+#endif
+
     STAT4(DSUM);
     return  p;
 
@@ -863,6 +923,9 @@ void header() {
 #elif METHOD == 1
     cout << " BST [testAndTestAndSet lock]";
 #endif
+#if METHOD == 2
+	cout << "BST [HLE testAndTestAndSet lock]";
+#endif;
 
     cout << " NCPUS=" << ncpu << " RAM=" << (getPhysicalMemSz() + G - 1) / G << "GB ";
 
