@@ -988,6 +988,8 @@ int main(int argc, char* argv[]) {
         cout << "HLE (hardware lock elision) NOT supported by this CPU" << endl;
         quit();
         return 1;
+    } else {
+    	cout << "HLE Support by this CPU" << endl;
     }
 #endif
 
@@ -1031,6 +1033,7 @@ int main(int argc, char* argv[]) {
         //
         // results
         //
+        cout << "calculating results..." << endl;
         setCommaLocale();
         int keyw = (int) log10((double) keyMax) + (int) (log10((double) keyMax) / log10(1000)) + 2;
         keyw = (keyw < 7) ? 7 : keyw;
@@ -1073,8 +1076,9 @@ int main(int argc, char* argv[]) {
         cout << endl;
 
         rindx = 0;                                                      // zero results index
-
+		cout << "Result output template complete..." << endl;
         for (maxKey = keyMin; maxKey <= keyMax; maxKey *= SCALEKEY) {
+        cout << maxKey << endl;
 
 #if METHOD > 0
             double noppersec1 = 1;
