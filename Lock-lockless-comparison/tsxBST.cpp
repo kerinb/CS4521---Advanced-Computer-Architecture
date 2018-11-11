@@ -369,6 +369,7 @@ int BST::contains(INT64 key) {
         } while (lock);
     }
 #elif METHOD == 2
+	cout << "acquire lock - BST contains" << endl;
     while(_InterlockedExchange_HLEAcquire(&lock, 1)){ 
     	abortNum++;
         do {
@@ -392,6 +393,7 @@ int BST::contains(INT64 key) {
 #if METHOD == 1
     lock = 0;
 #elif METHOD == 2
+	cout << "release lock - BST contains" << endl;
     _Store_HLERelease(&lock, 0);
 #elif METHOD == 3
 	cout << "implement" << endl;
@@ -405,6 +407,7 @@ int BST::contains(INT64 key) {
 #if METHOD == 1
     lock = 0;
 #elif METHOD == 2
+	cout << "release lock 2 - BST contains" << endl;
     _Store_HLERelease(&lock, 0);
 #elif METHOD == 3
 	cout << "implement" << endl;
@@ -433,6 +436,7 @@ int BST::addTSX(Node *n) {
         } while (lock);
     }
 #elif METHOD == 2
+	cout << "acquire lock - add TSX" << endl;
     while(_InterlockedExchange_HLEAcquire(&lock, 1)){
     abortNum++;
         do {
@@ -456,6 +460,7 @@ int BST::addTSX(Node *n) {
 #if METHOD == 1
             lock = 0;
 #elif METHOD == 2
+	cout << "release lock - add TSX" << endl;
     _Store_HLERelease(&lock, 0);
 #elif METHOD == 3
 	cout << "implement" << endl;
@@ -471,6 +476,7 @@ int BST::addTSX(Node *n) {
 #if METHOD == 1
     lock = 0;
 #elif METHOD == 2
+	cout << "release lock 2 - add TSX" << endl;
     _Store_HLERelease(&lock, 0);
 #elif METHOD == 3
 	cout << "implement" << endl;
@@ -499,6 +505,7 @@ Node* BST::removeTSX(INT64 key) {
         } while (lock);
     }
 #elif METHOD == 2
+	cout << "acquire lock - remove TSX" << endl;
     while (_InterlockedExchange_HLEAcquire(&lock, 1)){
 	    abortNum++;
     	do {
@@ -528,6 +535,7 @@ Node* BST::removeTSX(INT64 key) {
 #if METHOD == 1
         lock = 0;
 #elif METHOD == 2
+	cout << "release lock - remove TSX" << endl;
 	_Store_HLERelease(&lock, 1);
 #elif METHOD == 3
 	cout << "implement" << endl;
@@ -567,6 +575,7 @@ Node* BST::removeTSX(INT64 key) {
 #if METHOD == 1
     lock = 0;
 #elif METHOD == 2
+	cout << "remove lock 2 - remove TSX" << endl;
 	_Store_HLERelease(&lock, 0);
 #elif METHOD == 3
 	cout << "implement" << endl;
