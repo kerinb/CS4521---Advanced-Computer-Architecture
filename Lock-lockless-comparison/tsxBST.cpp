@@ -363,12 +363,12 @@ int BST::contains(INT64 key) {
     }
 #endif
 #if METHOD == 2
-    while(_InterlockedExchange_HLEAcquire(&lock, 1)){ 
-    	abortNum++;
-        do {
-            _mm_pause();
-        } while(lock);
-    }
+    while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
+		abortNum++;																
+		do {																		
+			_mm_pause();														
+		} while (lock == 1);													
+	}
 #endif
 #if METHOD == 3
 	cout << "implement" << endl;
@@ -388,7 +388,7 @@ int BST::contains(INT64 key) {
     lock = 0;
 #endif
 #if METHOD == 2
-    _Store_HLERelease(&lock, 0);
+   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 #endif
 #if METHOD == 3
 	cout << "implement" << endl;
@@ -403,7 +403,7 @@ int BST::contains(INT64 key) {
     lock = 0;
 #endif
 #if METHOD == 2
-    _Store_HLERelease(&lock, 0);
+	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 #endif
 #if METHOD == 3
 	cout << "implement" << endl;
@@ -434,12 +434,12 @@ int BST::addTSX(Node *n) {
     }
 #endif
 #if METHOD == 2
-    while(_InterlockedExchange_HLEAcquire(&lock, 1)){
-    abortNum++;
-        do {
-            _mm_pause();
-        } while(lock);
-    }
+    while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
+		abortNum++;																
+		do {																		
+			_mm_pause();														
+		} while (lock == 1);													
+	}
 #endif
 #if METHOD == 3
 	cout << "implement" << endl;
@@ -459,7 +459,7 @@ int BST::addTSX(Node *n) {
             lock = 0;
 #endif
 #if METHOD == 2
-    _Store_HLERelease(&lock, 0);
+   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 #endif
 #if METHOD == 3
 	cout << "implement" << endl;
@@ -476,7 +476,7 @@ int BST::addTSX(Node *n) {
     lock = 0;
 #endif
 #if METHOD == 2
-    _Store_HLERelease(&lock, 0);
+	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 #endif
 #if METHOD == 3
 	cout << "implement" << endl;
@@ -506,12 +506,12 @@ Node* BST::removeTSX(INT64 key) {
     }
 #endif
 #if METHOD == 2
-    while (_InterlockedExchange_HLEAcquire(&lock, 1)){
-	    abortNum++;
-    	do {
-    		_mm_pause();
-    	} while(lock);
-    }
+    while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
+		abortNum++;																
+		do {																		
+			_mm_pause();														
+		} while (lock == 1);													
+	}
 #endif
 #if METHOD == 3
 	cout << "implement" << endl;
@@ -537,7 +537,7 @@ Node* BST::removeTSX(INT64 key) {
         lock = 0;
 #endif
 #if METHOD == 2
-	_Store_HLERelease(&lock, 1);
+	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 #endif
 #if METHOD == 3
 	cout << "implement" << endl;
@@ -578,7 +578,7 @@ Node* BST::removeTSX(INT64 key) {
     lock = 0;
 #endif
 #if METHOD == 2
-	_Store_HLERelease(&lock, 0);
+	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 #endif
 #if METHOD == 3
 	cout << "implement" << endl;
