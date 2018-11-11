@@ -8,26 +8,23 @@
 // NB: gcc needs flags -mrtm -mrdrnd
 //
 
-#include <iostream>         // cout
-#include <iomanip>          // setprecision
-#include "helper.h"         //
+#include <iostream>         
+#include <iomanip>          
+#include "helper.h"         
 
 #ifdef WIN32
-#include <conio.h>          // _getch()
-#include <psapi.h>          // GetProcessMemoryInfo
+#include <conio.h>          
+#include <psapi.h>          
 #elif __linux__
-#include <termios.h>        //
-#include <unistd.h>         //
-#include <limits.h>         // HOST_NAME_MAX
-#include <sys/utsname.h>    //
-#include <fcntl.h>          // O_RDWR
+#include <termios.h>        
+#include <unistd.h>         
+#include <limits.h>         
+#include <sys/utsname.h>    
+#include <fcntl.h>          
 #endif
 
-using namespace std;        // cout. ...
+using namespace std;        
 
-//
-// for data returned by cpuid instruction
-//
 struct _cd {
     UINT eax;
     UINT ebx;
@@ -35,14 +32,11 @@ struct _cd {
     UINT edx;
 } cd;
 
-UINT ncpu;                  // # logical CPUs
-char *hostName = NULL;      // host name
-char *osName = NULL;        // os name
-char *brandString = NULL;   // cpu brand string
+UINT ncpu;                  
+char *hostName = NULL;      
+char *osName = NULL;        
+char *brandString = NULL;   
 
-//
-// getDateAndTime
-//
 void getDateAndTime(char *dateAndTime, int sz, time_t t) {
     t = (t == 0) ? time(NULL) : 0;
 #ifdef WIN32
@@ -55,9 +49,6 @@ void getDateAndTime(char *dateAndTime, int sz, time_t t) {
 #endif
 }
 
-//
-// getHostName
-//
 char* getHostName() {
     if (hostName == NULL) {
 
@@ -75,13 +66,10 @@ char* getHostName() {
     return hostName;
 }
 
-//
-// getOSName
-//
 char* getOSName() {
     if (osName == NULL) {
 
-        osName = (char*) malloc(256);   // should be large enough
+        osName = (char*) malloc(256);   
 
 #ifdef WIN32
         DWORD sz = 256;
@@ -105,12 +93,6 @@ char* getOSName() {
     return osName;
 }
 
-//
-// is64bitExe
-//
-// return 1 if a 64 bit .exe
-// return 0 if a 32 bit .exe
-//
 int is64bitExe() {
     return sizeof(size_t) == 8;
 }
@@ -121,45 +103,33 @@ int is64bitExe() {
 UINT64 getPhysicalMemSz() {
 #ifdef WIN32
     UINT64 v;
-    GetPhysicallyInstalledSystemMemory(&v);                         // returns KB
-    return v * 1024;                                                // now bytes
+    GetPhysicallyInstalledSystemMemory(&v);                         
+    return v * 1024;                                                
 #elif __linux__
-    return (UINT64) sysconf(_SC_PHYS_PAGES)* sysconf(_SC_PAGESIZE); // NB: returns bytes
+    return (UINT64) sysconf(_SC_PHYS_PAGES)* sysconf(_SC_PAGESIZE); 
 #endif
 }
 
-//
-// getNumberOfCPUs
-//
 int getNumberOfCPUs() {
 #ifdef WIN32
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo );
     return sysinfo.dwNumberOfProcessors;
 #elif __linux__
-    return (int) sysconf(_SC_NPROCESSORS_ONLN);                      // {joj 12/1/18}
+    return (int) sysconf(_SC_NPROCESSORS_ONLN);                      
 #endif
 }
 
-//
-// cpu64bit
-//
 int cpu64bit() {
     CPUID(cd, 0x80000001);
     return (cd.edx >> 29) & 0x01;
 }
 
-//
-// cpuFamily
-//
 int cpuFamily() {
     CPUID(cd, 0x01);
     return (cd.eax >> 8) & 0xff;
 }
 
-//
-// cpuModel
-//
 int cpuModel() {
     CPUID(cd, 0x01);
     if (((cd.eax >> 8) & 0xff) == 0x06)
@@ -167,17 +137,11 @@ int cpuModel() {
     return (cd.eax >> 4) & 0x0f;
 }
 
-//
-// cpuStepping
-//
 int cpuStepping() {
     CPUID(cd, 0x01);
     return cd.eax & 0x0f;
 }
 
-//
-// cpuBrandString
-//
 char *cpuBrandString() {
     if (brandString)
         return brandString;
@@ -196,36 +160,23 @@ char *cpuBrandString() {
         UINT *p = &cd.eax;
         for (int j = 0; j < 4; j++, p++) {
             for (int k = 0; k < 4; k++ ) {
-                brandString[i*16 + j*4 + k] = (char) ((*p >> (k * 8)) & 0xff);      // {joj 12/1/18}
+                brandString[i*16 + j*4 + k] = (char) ((*p >> (k * 8)) & 0xff);      
             }
         }
     }
     return brandString;
 }
 
-//
-// rtmSupported (restricted transactional memory)
-//
-// NB: VirtualBox returns 0 even if CPU supports RTM?
-//
 int rtmSupported() {
     CPUIDEX(cd, 0x07, 0);
-    return (cd.ebx >> 11) & 1;      // test bit 11 in ebx
+    return (cd.ebx >> 11) & 1;      
 }
 
-//
-// hleSupported (hardware lock elision)
-//
-// NB: VirtualBox returns 0 even if CPU supports HLE??
-//
 int hleSupported() {
     CPUIDEX(cd, 0x07, 0);
-    return (cd.ebx >> 4) & 1;       // test bit 4 in ebx
+    return (cd.ebx >> 4) & 1;       
 }
 
-//
-// look for L1 cache line size (see Intel Application note on CPUID instruction)
-//
 int lookForL1DataCacheInfo(int v) {
     if (v & 0x80000000)
         return 0;
@@ -249,9 +200,6 @@ int lookForL1DataCacheInfo(int v) {
     return 0;
 }
 
-//
-// getL1DataCacheInfo
-//
 int getL1DataCacheInfo() {
     CPUID(cd, 2);
 
@@ -275,9 +223,6 @@ int getL1DataCacheInfo() {
     return 64;
 }
 
-//
-// getCacheInfo
-//
 int getCacheInfo(int level, int data, int &l, int &k, int&n) {
     CPUID(cd, 0x00);
     if (cd.eax < 4)
@@ -300,9 +245,6 @@ int getCacheInfo(int level, int data, int &l, int &k, int&n) {
     return partitions == 1;
 }
 
-//
-// getDeterministicCacheInfo
-//
 int getDeterministicCacheInfo() {
     int type, ways, partitions, lineSz = 0, sets;
     int i = 0;
@@ -324,9 +266,6 @@ int getDeterministicCacheInfo() {
     return lineSz;
 }
 
-//
-// getCacheLineSz
-//
 int getCacheLineSz() {
     CPUID(cd, 0x00);
     if (cd.eax >= 4)
@@ -334,22 +273,16 @@ int getCacheLineSz() {
     return getL1DataCacheInfo();
 }
 
-//
-// getPageSz
-//
 UINT getPageSz() {
 #ifdef WIN32
     SYSTEM_INFO si;
     GetSystemInfo(&si);
     return si.dwPageSize;
 #elif __linux__
-    return (UINT) sysconf(_SC_PAGESIZE);    // {joj 12/1/18}
+    return (UINT) sysconf(_SC_PAGESIZE);    
 #endif 
 }
 
-//
-// getWallClockMS
-//
 UINT64 getWallClockMS() {
 #ifdef WIN32
     return (UINT64) clock() * 1000 / CLOCKS_PER_SEC;
@@ -360,9 +293,6 @@ UINT64 getWallClockMS() {
 #endif
 }
 
-//
-// setThreadCPU
-//
 void createThread(THREADH *threadH, WORKERF, void *arg) {
 #ifdef WIN32
     *threadH = CreateThread(NULL, 0, worker, arg, 0, NULL);
@@ -371,9 +301,6 @@ void createThread(THREADH *threadH, WORKERF, void *arg) {
 #endif
 }
 
-//
-// runThreadOnCPU
-//
 void runThreadOnCPU(UINT cpu) {
 #ifdef WIN32
     SetThreadAffinityMask(GetCurrentThread(), 1ULL << cpu);
@@ -385,20 +312,13 @@ void runThreadOnCPU(UINT cpu) {
 #endif
 }
 
-//
-// closeThread
-//
 void closeThread(THREADH threadH) {
 #ifdef WIN32
     CloseHandle(threadH);
 #elif __linux__
-    // nothing to do
 #endif
 }
 
-//
-// waitForThreadsToFinish
-//
 void waitForThreadsToFinish(UINT nt, THREADH *threadH) {
 #ifdef WIN32
     WaitForMultipleObjects(nt, threadH, true, INFINITE);
@@ -408,9 +328,6 @@ void waitForThreadsToFinish(UINT nt, THREADH *threadH) {
 #endif
 }
 
-//
-// pauseIfKeyPressed
-//
 void pauseIfKeyPressed() {
 #ifdef WIN32
     if (_kbhit()) {
@@ -425,42 +342,30 @@ void pauseIfKeyPressed() {
 #endif
 };
 
-//
-// pressKeyToContinue
-//
 void pressKeyToContinue() {
 #ifdef WIN32
     cout << endl << "Press any key to continue...";
     _getch();
 #elif __linux__
     termios old, input;
-    tcgetattr(fileno(stdin), &old);             // save settings
-    input = old;                                // make new settings same as old settings
-    input.c_lflag &= ~(ICANON | ECHO);          // disable buffered i/o and echo
-    tcsetattr(fileno(stdin), TCSANOW, &input);  // use these new terminal i/o settings now
+    tcgetattr(fileno(stdin), &old);             
+    input = old;                                
+    input.c_lflag &= ~(ICANON | ECHO);          
+    tcsetattr(fileno(stdin), TCSANOW, &input);  
     puts("Press any key to continue...");
     getchar();
     tcsetattr(fileno(stdin), TCSANOW, &old);
 #endif
 }
 
-//
-// quit
-//
 void quit(int r) {
 #ifdef WIN32
     cout << endl << "Press key to quit...";
-    _getch();   // stop DOS window disappearing prematurely
+    _getch();   
 #endif
     exit(r);
 }
 
-//
-// rand
-//
-// due to George Marsaglia (google "xorshift wiki")
-// NB: initial seed must NOT be 0
-//
 UINT64 rand(UINT64 &r) {
     r ^= r >> 12;   // a
     r ^= r << 25;   // b
@@ -470,25 +375,16 @@ UINT64 rand(UINT64 &r) {
 
 locale *commaLocale = NULL;
 
-//
-// setCommaLocale
-//
 void setCommaLocale() {
     if (commaLocale == NULL)
         commaLocale = new locale(locale(), new CommaLocale());
     cout.imbue(*commaLocale);
 }
 
-//
-// setLocale
-//
 void setLocale() {
     cout.imbue(locale());
 }
 
-//
-// getVMUse
-//
 size_t getVMUse() {
     size_t r = 0;
 
@@ -519,9 +415,6 @@ size_t getVMUse() {
     return r;
 }
 
-//
-// getMemUse
-//
 size_t getMemUse() {
     size_t r = 0;
 
@@ -551,5 +444,3 @@ size_t getMemUse() {
 
     return r;
 }
-
-// eof
