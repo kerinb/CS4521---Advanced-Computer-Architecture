@@ -272,7 +272,8 @@ BST *bst;                                                   // binary search tre
 //
 // BST constructor
 //
-BST::BST(UINT nt)  {                                                    //
+BST::BST(UINT nt)  {  
+	cout << "instantiating BST" << endl;                                                  //
     perThreadData = (PerThreadData*) AMALLOC(nt*ptDataSz, lineSz);      // for per thread data
     memset(perThreadData, 0, nt*ptDataSz);                              // zero
     for (UINT thread = 0; thread < nt; thread++)                        //
@@ -282,6 +283,7 @@ BST::BST(UINT nt)  {                                                    //
     lock = 0;
 
 #if METHOD == 2
+	cout << "creating abort um" << endl;
     abortNum = 0;
 #endif
 
@@ -370,11 +372,11 @@ int BST::contains(INT64 key) {
     }
 #endif
 #if METHOD == 2
-    while(_InterlockedExchange_HLEAcquire(&lock, 1)){ 
+    while(_InterlockedExchange_HLEAcquire(&lock, 1) == 1){ 
     	abortNum++;
         do {
             _mm_pause();
-        } while(lock);
+        } while(lock == 1);
     }
 #endif
 
@@ -432,11 +434,11 @@ int BST::addTSX(Node *n) {
 #endif
 
 #if METHOD == 2
-    while(_InterlockedExchange_HLEAcquire(&lock, 1)){
+    while(_InterlockedExchange_HLEAcquire(&lock, 1) == 1){
     abortNum++;
         do {
             _mm_pause();
-        } while(lock);
+        } while(lock == 1);
     }
 #endif
 
@@ -498,11 +500,11 @@ Node* BST::removeTSX(INT64 key) {
 #endif
 
 #if METHOD == 2
-    while (_InterlockedExchange_HLEAcquire(&lock, 1)){
+    while (_InterlockedExchange_HLEAcquire(&lock, 1) == 1){
 	    abortNum++;
     	do {
     		_mm_pause();
-    	} while(lock);
+    	} while(lock == 1);
     }
 #endif
 
@@ -924,6 +926,9 @@ void header() {
 #if METHOD == 2
 	cout << "BST [HLE testAndTestAndSet lock]";
 #endif
+#if METHOD == 3
+	cout << "BST [Hardware Transactional Memory]";
+#endif
 
     cout << " NCPUS=" << ncpu << " RAM=" << (getPhysicalMemSz() + G - 1) / G << "GB ";
 
@@ -1078,7 +1083,6 @@ int main(int argc, char* argv[]) {
         rindx = 0;                                                      // zero results index
 		cout << "Result output template complete..." << endl;
         for (maxKey = keyMin; maxKey <= keyMax; maxKey *= SCALEKEY) {
-        cout << maxKey << endl;
 
 #if METHOD > 0
             double noppersec1 = 1;
@@ -1089,9 +1093,11 @@ int main(int argc, char* argv[]) {
                 bst = new BST(maxThread);                               // create an empty binary search tree
 
                 t0 = getWallClockMS();                                  // get start time
+                cout << "got wall clock" << endl;
 
 #ifdef PREFILL
                 bst->preFill();
+                cout << " tree pre fill" << endl;
                 UINT64 pft = getWallClockMS() - t0;
                 t0 = getWallClockMS();                                  // get start time
 #else
@@ -1101,15 +1107,16 @@ int main(int argc, char* argv[]) {
                 //
                 // create worker threads
                 //
+                cout << "creating worker threads"  << endl;
                 for (UINT thread = 0; thread < nt; thread++)
                     createThread(&threadH[thread], worker, (void*) (UINT64) thread);
-
+				cout << "worker threads complete" << endl;
                 //
                 // wait for ALL worker threads to finish
                 //
                 waitForThreadsToFinish(nt, threadH);
                 UINT64 rt = getWallClockMS() - t0;
-
+				cout << "all worker threads complete" << endl;
                 //
                 // calculate results
                 //
