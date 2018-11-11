@@ -52,7 +52,10 @@ using namespace std;                            // cout
 // METHOD 3: RTM
 //
 
-#define METHOD              0                   // METHOD
+//#define METHOD              0                   // METHOD = 0 = single thread to randomly add/remove keys from bst for Nsecs with maxKEy ranging from 16 - 1'048'576.
+#define METHOD 		    1			// METHOD = 1 = same tests are performed for 1-2*NCPU. The BST is lock protected
+//#define METHOD              2			// METHOD = 2 = TATAS lock is replaced with a HLE TATAS lock.
+//#define METHOD              3			// METHOD = 3 = BST updated with transactional memory
 //#define MOVENODE                              // move node rather than content
 #define PREFILL             0                   // pre-fill with odd integers 0 .. maxKey-1 => 0: perfect 1: right list 2: left list
 
