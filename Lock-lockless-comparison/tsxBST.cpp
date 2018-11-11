@@ -368,14 +368,15 @@ int BST::contains(INT64 key) {
             _mm_pause();
         } while (lock);
     }
-#endif
-#if METHOD == 2
-    while(_InterlockedExchange_HLEAcquire(&lock, 1) == 1){ 
+#elif METHOD == 2
+    while(_InterlockedExchange_HLEAcquire(&lock, 1)){ 
     	abortNum++;
         do {
             _mm_pause();
-        } while(lock == 1);
+        } while(lock);
     }
+#elif METHOD == 3
+	cout << "implement" << endl;
 #endif
 
     Node *p = root;
@@ -387,11 +388,13 @@ int BST::contains(INT64 key) {
         } else if (key > p->key) {
             p = p->right;
         } else {
+        
 #if METHOD == 1
-            lock = 0;
-#endif
-#if METHOD == 2
+    lock = 0;
+#elif METHOD == 2
     _Store_HLERelease(&lock, 0);
+#elif METHOD == 3
+	cout << "implement" << endl;
 #endif
 
             STAT4(DSUM);
@@ -401,10 +404,10 @@ int BST::contains(INT64 key) {
 
 #if METHOD == 1
     lock = 0;
-#endif
-
-#if METHOD == 2
+#elif METHOD == 2
     _Store_HLERelease(&lock, 0);
+#elif METHOD == 3
+	cout << "implement" << endl;
 #endif
 
     STAT4(DSUM);
@@ -429,15 +432,15 @@ int BST::addTSX(Node *n) {
             _mm_pause();
         } while (lock);
     }
-#endif
-
-#if METHOD == 2
+#elif METHOD == 2
     while(_InterlockedExchange_HLEAcquire(&lock, 1) == 1){
     abortNum++;
         do {
             _mm_pause();
         } while(lock == 1);
     }
+#elif METHOD == 3
+	cout << "implement" << endl;
 #endif
 
     Node* volatile *pp = &root;
@@ -452,10 +455,10 @@ int BST::addTSX(Node *n) {
         } else {
 #if METHOD == 1
             lock = 0;
-#endif
-
-#if METHOD == 2
+#elif METHOD == 2
     _Store_HLERelease(&lock, 0);
+#elif METHOD == 3
+	cout << "implement" << endl;
 #endif
 
             STAT4(DSUM);
@@ -467,10 +470,10 @@ int BST::addTSX(Node *n) {
     *pp = n;
 #if METHOD == 1
     lock = 0;
-#endif
-
-#if METHOD == 2
+#elif METHOD == 2
     _Store_HLERelease(&lock, 0);
+#elif METHOD == 3
+	cout << "implement" << endl;
 #endif
 
     STAT4(DSUM);
@@ -495,15 +498,15 @@ Node* BST::removeTSX(INT64 key) {
             _mm_pause();
         } while (lock);
     }
-#endif
-
-#if METHOD == 2
+#elif METHOD == 2
     while (_InterlockedExchange_HLEAcquire(&lock, 1) == 1){
 	    abortNum++;
     	do {
     		_mm_pause();
     	} while(lock == 1);
     }
+#elif METHOD == 3
+	cout << "implement" << endl;
 #endif
 
     Node* volatile *pp = &root;
@@ -524,10 +527,10 @@ Node* BST::removeTSX(INT64 key) {
     if (p == NULL) {
 #if METHOD == 1
         lock = 0;
-#endif
-
-#if METHOD == 2
+#elif METHOD == 2
 	_Store_HLERelease(&lock, 1);
+#elif METHOD == 3
+	cout << "implement" << endl;
 #endif
 
         STAT4(DSUM);
@@ -563,9 +566,10 @@ Node* BST::removeTSX(INT64 key) {
 
 #if METHOD == 1
     lock = 0;
-#endif
-#if METHOD == 2
+#elif METHOD == 2
 	_Store_HLERelease(&lock, 0);
+#elif METHOD == 3
+	cout << "implement" << endl;
 #endif
 
     STAT4(DSUM);
@@ -1107,6 +1111,7 @@ int main(int argc, char* argv[]) {
                 // wait for ALL worker threads to finish
                 //
                 waitForThreadsToFinish(nt, threadH);
+                cout << "ALL threads finished" << endl;
                 UINT64 rt = getWallClockMS() - t0;
                 //
                 // calculate results
