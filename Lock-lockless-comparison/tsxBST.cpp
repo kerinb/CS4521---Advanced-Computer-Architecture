@@ -273,7 +273,6 @@ BST *bst;                                                   // binary search tre
 // BST constructor
 //
 BST::BST(UINT nt)  {  
-	cout << "instantiating BST" << endl;                                                  //
     perThreadData = (PerThreadData*) AMALLOC(nt*ptDataSz, lineSz);      // for per thread data
     memset(perThreadData, 0, nt*ptDataSz);                              // zero
     for (UINT thread = 0; thread < nt; thread++)                        //
@@ -283,7 +282,6 @@ BST::BST(UINT nt)  {
     lock = 0;
 
 #if METHOD == 2
-	cout << "creating abort num" << endl;
     abortNum = 0;
 #endif
 
@@ -804,7 +802,6 @@ void BST::preFill() {
     // create worker threads and wait to finish
     //
     for (UINT cpu = 0; cpu < ncpu; cpu++)
-    	cout << cpu << endl;
         createThread(&threadH[cpu], preFillWorker, (void*) &params[cpu]);
     waitForThreadsToFinish(ncpu, threadH);
 
@@ -1039,7 +1036,6 @@ int main(int argc, char* argv[]) {
         //
         // results
         //
-        cout << "calculating results..." << endl;
         setCommaLocale();
         int keyw = (int) log10((double) keyMax) + (int) (log10((double) keyMax) / log10(1000)) + 2;
         keyw = (keyw < 7) ? 7 : keyw;
@@ -1082,7 +1078,6 @@ int main(int argc, char* argv[]) {
         cout << endl;
 
         rindx = 0;                                                      // zero results index
-		cout << "Result output template complete..." << endl;
         for (maxKey = keyMin; maxKey <= keyMax; maxKey *= SCALEKEY) {
 
 #if METHOD > 0
@@ -1094,11 +1089,9 @@ int main(int argc, char* argv[]) {
                 bst = new BST(maxThread);                               // create an empty binary search tree
 
                 t0 = getWallClockMS();                                  // get start time
-                cout << "got wall clock" << endl;
 
 #ifdef PREFILL
                 bst->preFill();
-                cout << "tree pre fill" << endl;
                 UINT64 pft = getWallClockMS() - t0;
                 t0 = getWallClockMS();                                  // get start time
 #else
@@ -1108,16 +1101,13 @@ int main(int argc, char* argv[]) {
                 //
                 // create worker threads
                 //
-                cout << "creating worker threads"  << endl;
                 for (UINT thread = 0; thread < nt; thread++)
                     createThread(&threadH[thread], worker, (void*) (UINT64) thread);
-				cout << "worker threads complete" << endl;
                 //
                 // wait for ALL worker threads to finish
                 //
                 waitForThreadsToFinish(nt, threadH);
                 UINT64 rt = getWallClockMS() - t0;
-				cout << "all worker threads complete" << endl;
                 //
                 // calculate results
                 //
