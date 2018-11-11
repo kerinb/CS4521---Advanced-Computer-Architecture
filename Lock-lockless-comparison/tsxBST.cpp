@@ -283,7 +283,7 @@ BST::BST(UINT nt)  {
     lock = 0;
 
 #if METHOD == 2
-	cout << "creating abort um" << endl;
+	cout << "creating abort num" << endl;
     abortNum = 0;
 #endif
 
@@ -804,6 +804,7 @@ void BST::preFill() {
     // create worker threads and wait to finish
     //
     for (UINT cpu = 0; cpu < ncpu; cpu++)
+    	cout << cpu << endl;
         createThread(&threadH[cpu], preFillWorker, (void*) &params[cpu]);
     waitForThreadsToFinish(ncpu, threadH);
 
@@ -1097,7 +1098,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef PREFILL
                 bst->preFill();
-                cout << " tree pre fill" << endl;
+                cout << "tree pre fill" << endl;
                 UINT64 pft = getWallClockMS() - t0;
                 t0 = getWallClockMS();                                  // get start time
 #else
