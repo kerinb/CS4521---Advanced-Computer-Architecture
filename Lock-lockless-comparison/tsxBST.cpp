@@ -433,11 +433,11 @@ int BST::addTSX(Node *n) {
         } while (lock);
     }
 #elif METHOD == 2
-    while(_InterlockedExchange_HLEAcquire(&lock, 1) == 1){
+    while(_InterlockedExchange_HLEAcquire(&lock, 1)){
     abortNum++;
         do {
             _mm_pause();
-        } while(lock == 1);
+        } while(lock);
     }
 #elif METHOD == 3
 	cout << "implement" << endl;
@@ -499,11 +499,11 @@ Node* BST::removeTSX(INT64 key) {
         } while (lock);
     }
 #elif METHOD == 2
-    while (_InterlockedExchange_HLEAcquire(&lock, 1) == 1){
+    while (_InterlockedExchange_HLEAcquire(&lock, 1)){
 	    abortNum++;
     	do {
     		_mm_pause();
-    	} while(lock == 1);
+    	} while(lock);
     }
 #elif METHOD == 3
 	cout << "implement" << endl;
