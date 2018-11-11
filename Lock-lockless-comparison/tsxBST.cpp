@@ -33,122 +33,177 @@ define G                   (K*K*K)
 #define MAXKEY              (1*M)              
 #define SCALEKEY            (4)                
 
-#define MINNT               1                   
+#define MINNT               1                   // min number of threads
 
 #define NSECONDS            2                  
 
-#define STATS               0x17                 MASK 1:commit 2:abort 4:depth 8:tsxStatus 16:times
+#define STATS               0x17                // STATS bit MASK 1:commit 2:abort 4:depth 8:tsxStatus 16:times
 
 #define ALIGNED                              
 #define RECYCLENODES                         
 
-
-#define NOP                 1000                
+//#define CONTAINS          100                 // % contains (100-contains)/2 adds and removes
+#define NOP                 1000                // number of operations between tests for exceeding runtime
 
 #if CONTAINS < 0 || CONTAINS > 100
 #error CONTAINS sould be in the range 0 to 100
 #endif
 
-#if STATS & 1                                   
-#define STAT1(x)    x                           
+//
+// useful MACROs
+//
+#if STATS & 1                                   //
+#define STAT1(x)    x                           //
 #else
-#define STAT1(x)                                
+#define STAT1(x)                                //
 #endif
 
-#if STATS & 2                                   
-#define STAT2(x)    x                           
+#if STATS & 2                                   //
+#define STAT2(x)    x                           //
 #else
-#define STAT2(x)                                
+#define STAT2(x)                                //
 #endif
 
 
-#if STATS & 4                                   
-#define STAT4(x)    x                           
+#if STATS & 4                                   //
+#define STAT4(x)    x                           //
 #else
-#define STAT4(x)                                
+#define STAT4(x)                                //
 #endif
 
-#if STATS & 8                                   
-#define STAT8(x)    x                           
+#if STATS & 8                                   //
+#define STAT8(x)    x                           //
 #else
-#define STAT8(x)                                
+#define STAT8(x)                                //
 #endif
 
-#if STATS & 16                                  
-#define STAT16(x)   x                           
+#if STATS & 16                                  //
+#define STAT16(x)   x                           //
 #else
-#define STAT16(x)                               
+#define STAT16(x)                               //
 #endif
 
 #define DSUM    pt->avgD += d;      \
                 if (d > pt->maxD)   \
-                    pt->maxD = d                
+                    pt->maxD = d                //
 
 #define PT(bst, thread)     ((PerThreadData*) ((BYTE*) ((bst)->perThreadData) + (thread)*ptDataSz))
 
-UINT ntMin;                                     
-UINT nt;                                        
-UINT maxThread;                                 
-UINT lineSz;                                    
-UINT ptDataSz;                                  
-UINT64 tStart;                                  
-UINT64 t0;                                      
-INT64 maxKey;                                   
-UINT64 totalOps = 0;                            
+//
+// global variables
+//
+UINT ntMin;                                     //
+UINT nt;                                        // # threads
+UINT maxThread;                                 //
+UINT lineSz;                                    // cache line sz
+UINT ptDataSz;                                  // per thread data size
+UINT64 tStart;                                  // start time
+UINT64 t0;                                      // start time of test
+INT64 maxKey;                                   // 0 .. keyMax-1
+UINT64 totalOps = 0;                            // cumulative ops
 
-THREADH *threadH;                               
+THREADH *threadH;                               // thread handles
 
-TLSINDEX tlsPtIndx;                             
-0
+TLSINDEX tlsPtIndx;                             // {joj 25/11/15}
+
+//
+// NB: ALL results
+//
 typedef struct {
-    INT64 maxKey;                               
-    UINT nt;                                    
-    UINT64 pft;                                 
-    UINT64 rt;                                  
-    UINT64 nop;                                 
-    UINT64 nmalloc;                             
-    UINT64 nfree;                               
-    UINT64 avgD;                                
-    UINT64 maxD;                                
-    size_t vmUse;                               
-    size_t memUse;                              
-    UINT64 ntree;                               
+    INT64 maxKey;                               // 0 .. maxKey
+    UINT nt;                                    // # threads
+    UINT64 pft;                                 // pre fill time (ms)
+    UINT64 rt;                                  // test run time (ms)
+    UINT64 nop;                                 // nop
+    UINT64 nmalloc;                             // nmalloc
+    UINT64 nfree;                               // nfree
+    UINT64 avgD;                                // used to calculate average search depth of tree
+    UINT64 maxD;                                // max depth of tree
+    size_t vmUse;                               // vmUse
+    size_t memUse;                              // memUse
+    UINT64 ntree;                               // nodes in tree
     UINT64 tt;                                  // total time (ms) [fill time] + test run time + free memory time
 } Result;
 
-Result *r, *ravg;                               
-UINT rindx;                                     
-UINT64 errs = 0;                                
+Result *r, *ravg;                               // for results
+UINT rindx;                                     // results index
+UINT64 errs = 0;                                // errors
 
-class Node;                                     
+class Node;                                     // forward declaration
 
+//
+// PerThreadData
+//
 typedef struct {
-    UINT thread;                                
-    UINT64 nop;                                 
-    UINT64 nmalloc;                             
-    UINT64 nfree;                               
-    UINT64 avgD;                                
-    UINT64 maxD;                                
-    Node *free;                                 )
+    UINT thread;                                // thread #
+    UINT64 nop;                                 // nop
+    UINT64 nmalloc;                             // nmalloc
+    UINT64 nfree;                               // nfree
+    UINT64 avgD;                                // average tree depth
+    UINT64 maxD;                                // max tree depth
+    Node *free;                                 // head of free node list (RECYLENODES)
 } PerThreadData;
 
+//
+// derive from ALIGNEDMA for aligned memory allocation
+//
 class ALIGNEDMA {
 
 public:
 
-    void* operator new(size_t);                     
-    void operator delete(void*);                    
+    void* operator new(size_t);                     // override new
+    void operator delete(void*);                    // override delete
 
 };
 
+//
+// new
+//
 void* ALIGNEDMA::operator new(size_t sz) {
-    return AMALLOC(sz, lineSz);                     
+    return AMALLOC(sz, lineSz);                     // allocate on a lineSz boundary
 }
 
+//
+// delete
+//
 void ALIGNEDMA::operator delete(void *p) {
-    AFREE(p);                                       
+    AFREE(p);                                       // free memory
 }
 
+//
+// Node
+//
+// Why are the Node members declared volatile? Consider the following code sequence:
+//
+//  .. = n->key                                     (1)
+//
+//  while(1)
+//
+//      UNIT status = _xbegin();
+//
+//      if (status == _XBEGIN_STARTED) {
+//
+//          .. = n->key;                            (2)
+//
+//          .. = n->key                             (3)
+//
+//          _xend();
+//
+//      } else {
+//
+//          // abort handler
+//
+//      }
+//
+// }
+//
+// It is important that (2) reads the key value from memory as its address needs to be added
+// to the transaction read set. A compiler may optimise away the memory read (2) because it
+// has already been read by (1). Interestingly, it doesn't matter if (3) is read from memory
+// or not as long as (2) is a memory read. A write to the key by another thread will be caught
+// by the hardware and the transaction aborted. Clearly, it is more efficient to read the key
+// in (3) from a register copy.
+//
 #if defined(ALIGNED)
 class Node : public ALIGNEDMA {
 #else
@@ -157,61 +212,70 @@ class Node {
 
 public:
 
-    INT64 volatile key;                                     
-    Node* volatile left;                                    
-    Node* volatile right;                                   
+    INT64 volatile key;                                     // volatile
+    Node* volatile left;                                    // volatile
+    Node* volatile right;                                   // volatile
 
-    Node() {key = 0; right = left = NULL;}                  
-    Node(INT64 k) {key = k; right = left = NULL;}           
+    Node() {key = 0; right = left = NULL;}                  // default constructor
+    Node(INT64 k) {key = k; right = left = NULL;}           // constructor
 
 };
 
+//
+// BST
+//
 class BST : public ALIGNEDMA {
 
 public:
 
-    PerThreadData *perThreadData;                           
-    Node* volatile root;                                    
+    PerThreadData *perThreadData;                           // per thread data
+    Node* volatile root;                                    //
 
-    BST(UINT);                                              
-    ~BST();                                                 
+    BST(UINT);                                              // constructor
+    ~BST();                                                 // destructor
 
-    int contains(INT64);                                     
-    int add(INT64);                                         
-    int remove(INT64);                                      
+    int contains(INT64);                                    // return 1 if key in tree {joj 25/11/15}
+    int add(INT64);                                         // add key to tree {joj 25/11/15}
+    int remove(INT64);                                      // remove key from tree {joj 25/11/15}
 
-    INT64 checkBST(Node*, UINT64& errBST);                  
+    INT64 checkBST(Node*, UINT64& errBST);                  // {joj 13/12/15}
 
 #ifdef PREFILL
-    void preFill();                                         
+    void preFill();                                         //
 #endif
 
-private:                                                    
+private:                                                    // private
 
 #if METHOD == 1
-    ALIGN(64) volatile long lock;                           
+    ALIGN(64) volatile long lock;                           // lock
 #endif
 
-    int addTSX(Node*);                                      
-    Node* removeTSX(INT64);                                 
+    int addTSX(Node*);                                      // add key into tree {joj 25/11/15}
+    Node* removeTSX(INT64);                                 // remove key from tree {joj 25/11/15}
 
 #if defined(RECYCLENODES)
-    Node* alloc(INT64, PerThreadData*);                     
-    void dealloc(Node*, PerThreadData*);                    
+    Node* alloc(INT64, PerThreadData*);                     // alloc
+    void dealloc(Node*, PerThreadData*);                    // dealloc
 #endif
 
-    INT64 checkHelper(Node*, INT64, INT64, UINT64&);        
+    INT64 checkHelper(Node*, INT64, INT64, UINT64&);        // {joj 13/12/15}
 
 };
 
-BST *bst;                                                   
+//
+// binary search tree
+//
+BST *bst;                                                   // binary search tree
 
-BST::BST(UINT nt)  {                                                    
-    perThreadData = (PerThreadData*) AMALLOC(nt*ptDataSz, lineSz);      
-    memset(perThreadData, 0, nt*ptDataSz);                              
-    for (UINT thread = 0; thread < nt; thread++)                        
-        PT(this, thread)->thread = thread;                              
-    root = NULL;                                                        
+//
+// BST constructor
+//
+BST::BST(UINT nt)  {                                                    //
+    perThreadData = (PerThreadData*) AMALLOC(nt*ptDataSz, lineSz);      // for per thread data
+    memset(perThreadData, 0, nt*ptDataSz);                              // zero
+    for (UINT thread = 0; thread < nt; thread++)                        //
+        PT(this, thread)->thread = thread;                              //
+    root = NULL;                                                        //
 
 #if METHOD == 1
     lock = 0;
@@ -221,6 +285,9 @@ BST::BST(UINT nt)  {
 
 #if defined(RECYCLENODES)
 
+//
+// alloc
+//
 inline Node* BST::alloc(INT64 key, PerThreadData *pt) {
     Node *n;
     if (pt->free) {
@@ -235,6 +302,9 @@ inline Node* BST::alloc(INT64 key, PerThreadData *pt) {
     return n;
 }
 
+//
+// dealloc
+//
 inline void BST::dealloc(Node *n, PerThreadData *pt) {
     n->right = pt->free;
     pt->free = n;
@@ -242,6 +312,11 @@ inline void BST::dealloc(Node *n, PerThreadData *pt) {
 
 #endif
 
+//
+// checkHelper
+//
+// will not work if key VINTMIN or VINTMAX added
+//
 INT64 BST:: checkHelper(Node *n, INT64 min, INT64 max, UINT64& errBST) {
     if (n == NULL)
         return 0;
@@ -250,15 +325,35 @@ INT64 BST:: checkHelper(Node *n, INT64 min, INT64 max, UINT64& errBST) {
     return checkHelper(n->left, min, n->key, errBST) + checkHelper(n->right, n->key, max, errBST) + 1;
 }
 
+//
+//
+// checkBST
+//
+// check tree structure
+// in-order traversal of binary tree making sure keys in correct range
+// return number of nodes in BST
+// count errors
+//
 INT64 BST::checkBST(Node* n, UINT64& errBST) {
     errBST = 0;
     return checkHelper(n, INT64MIN, INT64MAX, errBST);
 }
 
+//
+// BST destructor
+//
 BST::~BST() {
     AFREE(perThreadData);
 }
 
+//
+// contains - search for key in tree
+//
+// METHOD 0: NO lock single thread
+// METHOD 1: testAndTestAndSet
+//
+// return 1 if key in tree
+//
 int BST::contains(INT64 key) {
     
     PerThreadData *pt = (PerThreadData*)TLSGETVALUE(tlsPtIndx);
@@ -295,6 +390,14 @@ int BST::contains(INT64 key) {
     return 0;
 }
 
+//
+// addTSX - add key to tree
+//
+// METHOD 0: NO lock single thread
+// METHOD 1: testAndTestAndSet
+//
+// return 1 if key found
+//
 int BST::addTSX(Node *n) {
 
     PerThreadData *pt = (PerThreadData*)TLSGETVALUE(tlsPtIndx);
@@ -334,6 +437,14 @@ int BST::addTSX(Node *n) {
     return 1;
 }
 
+//
+// removeTSX - remove key from tree
+//
+// METHOD 0: NO lock single thread
+// METHOD 1: testAndTestAndSet
+//
+// return pointer to removed node, otherwise NULL
+//
 Node* BST::removeTSX(INT64 key) {
 
     PerThreadData *pt = (PerThreadData*)TLSGETVALUE(tlsPtIndx);
@@ -404,10 +515,15 @@ Node* BST::removeTSX(INT64 key) {
 
 }
 
+//
+// add
+//
+// add key to tree
+//
 int BST::add(INT64 key) {
 
 #if defined(RECYCLENODES)
-    PerThreadData *pt = (PerThreadData*)TLSGETVALUE(tlsPtIndx); 
+    PerThreadData *pt = (PerThreadData*)TLSGETVALUE(tlsPtIndx); // {joj 6/11/18}
     Node *n = alloc(key, pt);
 #else
     Node *n = new Node(key);
@@ -425,11 +541,16 @@ int BST::add(INT64 key) {
     return 1;
 }
 
+//
+// remove
+//
+// remove key from tree
+//
 int BST::remove(INT64 key) {
 
     if (Node volatile *n = removeTSX(key)) {
 #if defined(RECYCLENODES)
-        PerThreadData *pt = (PerThreadData*)TLSGETVALUE(tlsPtIndx); 
+        PerThreadData *pt = (PerThreadData*)TLSGETVALUE(tlsPtIndx); // {joj 6/11/18}
         dealloc((Node *) n, pt);
 #else
         delete n;
@@ -442,6 +563,9 @@ int BST::remove(INT64 key) {
 
 #if defined(PREFILL) && PREFILL == 0
 
+//
+// preFillHelper
+//
 void preFillHelper(Node* volatile &root, INT64 minKey, INT64 maxKey, INT64 diff, PerThreadData *pt) {
     if (maxKey - minKey <= diff)
         return;
@@ -452,6 +576,11 @@ void preFillHelper(Node* volatile &root, INT64 minKey, INT64 maxKey, INT64 diff,
     preFillHelper(root->right, key, maxKey, diff, pt);
 }
 
+//
+// preFillWorker
+//
+// NB: use thread to set up values for preFillHelper
+//
 WORKER preFillWorker(void* vthread) {
 
     UINT64 thread = (UINT64) vthread;
@@ -484,15 +613,29 @@ WORKER preFillWorker(void* vthread) {
     return 0;
 }
 
+//
+// preFill
+//
+// NB: single thread for small trees, ALL threads for large trees
+//
 void BST::preFill() {
 
+    //
+    // for small lists use a single thread
+    //
     if (maxKey <= 1*M) {
         preFillHelper(bst->root, 0, maxKey - 1, 2, PT(this, 0));
         return;
     }
 
+    //
+    // fill top ncpu-1 tree nodes
+    //
     preFillHelper(bst->root, 0, maxKey - 1, maxKey / ncpu, PT(this, 0));
 
+    //
+    // create worker threads and wait to finish
+    //
     for (UINT thread = 0; thread < ncpu; thread++)
         createThread(&threadH[thread], preFillWorker, (void*) (UINT64) thread);
     waitForThreadsToFinish(ncpu, threadH);
@@ -500,6 +643,9 @@ void BST::preFill() {
     for (UINT thread = 0; thread < ncpu; thread++)
         closeThread(threadH[thread]);
 
+    //
+    // accumulate nmalloc stats on thread 0 for threads >= nt
+    //
     for (UINT cpu = 1; cpu < ncpu; cpu++) {
         if (cpu >= nt) {
             PT(this, 0)->nmalloc += PT(this, cpu)->nmalloc;
@@ -519,23 +665,31 @@ struct PARAMS {
     Node *last;
 };
 
+//
+// preFillWorker
+//
+// NB: worker for single and multi-threaded prefill
+// NB: makes an ordered list containing the odd numbers in the range params->minKey to params->maxKey
+// NB: assumes params->minKey and params->maxKey are both even
+// NB: assumes params->first is NULL
+//
 WORKER preFillWorker(void *_params) {
 
-    PARAMS *params = (PARAMS*) _params;     
-    INT64 key = params->minKey + 1;         
+    PARAMS *params = (PARAMS*) _params;     // coercion
+    INT64 key = params->minKey + 1;         // insert odd integers
 
     while (key < params->maxKey) {
         Node *nn = new Node(key);
         params->pt->nmalloc++;
 #if PREFILL == 1
-        if (params->first == NULL) {        
+        if (params->first == NULL) {        // in ascending order
             params->first = nn;
         } else {
             params->last->right = nn;
         }
         params->last = nn;
 #else
-        if (params->first == NULL) {        
+        if (params->first == NULL) {        // in descending order
             params->last = nn;
         } else {
             nn->left = params->first;
@@ -548,20 +702,35 @@ WORKER preFillWorker(void *_params) {
     return 0;
 }
 
+//
+// preFill
+//
+// NB: single thread for small trees, ALL threads for large trees
+//
 void BST::preFill() {
 
+    //
+    // for small lists use a single thread
+    //
     if (maxKey <= 1*M) {
         PARAMS params;
-        params.pt = PT(this, 0);                
+        params.pt = PT(this, 0);                // use thread 0
         params.minKey = 0;
         params.maxKey = maxKey;
         params.first = NULL;
         params.last = NULL;
         preFillWorker(&params);
         root = params.first;
+        //params.last->left = new (PT(this, 0)->thread) Node(3);        // error
         return;
     }
 
+    //
+    // following code is future proofing!
+    // on current CPUs, searching very long ordered lists is slow
+    //
+    // set up parameters
+    //
     PARAMS *params = new PARAMS[ncpu];
     for (UINT cpu = 0; cpu < ncpu; cpu++) {
         params[cpu].pt = PT(this, cpu);
@@ -571,11 +740,17 @@ void BST::preFill() {
         params[cpu].last = NULL;
     }
 
+    //
+    // create worker threads and wait to finish
+    //
     for (UINT cpu = 0; cpu < ncpu; cpu++)
         createThread(&threadH[cpu], preFillWorker, (void*) &params[cpu]);
     waitForThreadsToFinish(ncpu, threadH);
 
 
+    //
+    // concatenate individual lists in ascending or descending order
+    //
     for (UINT cpu = 0; cpu < ncpu; cpu++) {
 #if PREFILL == 1
         if (cpu == 0) {
@@ -592,11 +767,17 @@ void BST::preFill() {
 #endif
     }
 
+    //
+    // tidy up
+    //
     for (UINT cpu = 0; cpu < ncpu; cpu++)
         closeThread(threadH[cpu]);
 
     delete params;
 
+    //
+    // accumulate nmalloc stats on thread 0 for threads >= nt
+    //
     for (UINT cpu = 1; cpu < ncpu; cpu++) {
         if (cpu >= nt) {
             PT(this, 0)->nmalloc += PT(this, cpu)->nmalloc;
@@ -608,16 +789,22 @@ void BST::preFill() {
 
 #endif
 
+//
+// worker thread
+//
 WORKER worker(void* vthread) {
 
-    PerThreadData *pt = PT(bst, (UINT64)vthread);       
-    TLSSETVALUE(tlsPtIndx, pt);                         
+    PerThreadData *pt = PT(bst, (UINT64)vthread);       // {joj 25/11/15}
+    TLSSETVALUE(tlsPtIndx, pt);                         // {joj 25/11/15}
 
-    UINT64 r;                                           
-    while (_rdrand64_step(&r) == 0);                    
+    UINT64 r;                                           // local variable for pseudo random number generator
+    while (_rdrand64_step(&r) == 0);                    // random seed for rand
 
     while (1) {
 
+        //
+        // do some work
+        //
         for (int i = 0; i < NOP; i++) {
 
             UINT64 k = rand(r);
@@ -643,6 +830,9 @@ WORKER worker(void* vthread) {
         }
         pt->nop += NOP;
 
+        //
+        // check if runtime exceeded
+        //
         if (getWallClockMS() - t0 > NSECONDS*1000)
             break;
 
@@ -652,6 +842,9 @@ WORKER worker(void* vthread) {
 
 }
 
+//
+// header
+//
 void header() {
 
     char date[256];
@@ -703,26 +896,34 @@ void header() {
 
 }
 
+//
+// main
+//
 int main(int argc, char* argv[]) {
 
-    ncpu = getNumberOfCPUs();           
-    if (ncpu > 32)                      
-        ncpu = 32;                      
-    maxThread = 2 * ncpu;               
+    ncpu = getNumberOfCPUs();           // get number of CPUs
+    if (ncpu > 32)                      // {joj 6/11/18}
+        ncpu = 32;                      //
+    maxThread = 2 * ncpu;               //
 
-    TLSALLOC(tlsPtIndx);                
+    TLSALLOC(tlsPtIndx);                // {joj 25/11/15}
 
-    header();                           
+    header();                           // output header
 
-    tStart = time(NULL);                
+    tStart = time(NULL);                // start time
 
-    lineSz = getCacheLineSz();          
-    ptDataSz = (UINT) (sizeof(PerThreadData) + lineSz - 1) / lineSz * lineSz;          
+    lineSz = getCacheLineSz();          // get cache line size and output cache organisation
+    ptDataSz = (UINT) (sizeof(PerThreadData) + lineSz - 1) / lineSz * lineSz;          // {joj 12/2/18}
+
+    //cout << "sizeof(PerThreadData)=" << sizeof(PerThreadData) << " ptDataSz=" << ptDataSz << " sizeof(Result)=" << sizeof(Result);
 
     cout << endl;
 
 #if METHOD == 2
-   if (!hleSupported()) {
+    //
+    // check if HLE supported
+    //
+    if (!hleSupported()) {
         cout << "HLE (hardware lock elision) NOT supported by this CPU" << endl;
         quit();
         return 1;
@@ -730,7 +931,10 @@ int main(int argc, char* argv[]) {
 #endif
 
 #if METHOD == 3
-   if (!rtmSupported()) {
+    //
+    // check if RTM supported
+    //
+    if (!rtmSupported()) {
         cout << "RTM (restricted transactional memory) NOT supported by this CPU" << endl;
         quit();
         return 1;
@@ -742,27 +946,30 @@ int main(int argc, char* argv[]) {
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
 #endif
 
-    INT64 keyMin = MINKEY;                                                  
-    INT64 keyMax = MAXKEY;                                                  
+    INT64 keyMin = MINKEY;                                                  // set min key
+    INT64 keyMax = MAXKEY;                                                  // set max key
 #if METHOD == 0                                 
     ntMin = 1;
     UINT ntMax = 1;
 #else
     ntMin = MINNT;
-    UINT ntMax = maxThread;                                                 
+    UINT ntMax = maxThread;                                                 //
 #endif
 
-    int c0 = 1, c1 = 1;                                                     
-    for (maxKey = keyMin; maxKey < keyMax; maxKey *= SCALEKEY)              
-        c0++;                                                               
-    for (nt = ntMin; nt < ntMax; nt *= 2)                                   
-        c1++;                                                               
+    int c0 = 1, c1 = 1;                                                     //
+    for (maxKey = keyMin; maxKey < keyMax; maxKey *= SCALEKEY)              //
+        c0++;                                                               //
+    for (nt = ntMin; nt < ntMax; nt *= 2)                                   //
+        c1++;                                                               //
 
-    threadH = (THREADH*) AMALLOC(maxThread*sizeof(THREADH), lineSz);        
-    r = (Result*) AMALLOC(c0*c1*sizeof(Result), lineSz);                    
-    ravg = (Result*) AMALLOC(c0*c1*sizeof(Result), lineSz);                 
-    memset(ravg, 0, c0*c1*sizeof(Result));                                  
-        
+    threadH = (THREADH*) AMALLOC(maxThread*sizeof(THREADH), lineSz);        // thread handles
+    r = (Result*) AMALLOC(c0*c1*sizeof(Result), lineSz);                    // for results
+    ravg = (Result*) AMALLOC(c0*c1*sizeof(Result), lineSz);                 // for averages
+    memset(ravg, 0, c0*c1*sizeof(Result));                                  // clear results
+
+        //
+        // results
+        //
         setCommaLocale();
         int keyw = (int) log10((double) keyMax) + (int) (log10((double) keyMax) / log10(1000)) + 2;
         keyw = (keyw < 7) ? 7 : keyw;
@@ -786,25 +993,25 @@ int main(int argc, char* argv[]) {
         STAT16(cout << setw(7) << "tt");
         cout << endl;
 
-        cout << setw(keyw - 1) << "------" << setw(3) << "--";          
+        cout << setw(keyw - 1) << "------" << setw(3) << "--";          // maxKey nt
 #ifdef PREFILL
-        STAT16(cout << setw(7) << "---");                               
+        STAT16(cout << setw(7) << "---");                               // pft
 #endif
-        cout << setw(7) << "--";                                        
-        cout << setw(16) << "---" << setw(12) << "-----";               
+        cout << setw(7) << "--";                                        // rt
+        cout << setw(16) << "---" << setw(12) << "-----";               // ops ops/s
 #if METHOD > 0
         if (ntMin == 1)
-            cout << setw(8) << "---";                                   
+            cout << setw(8) << "---";                                   // rel
 #endif
-        cout << setw(14) << "-------" << setw(14) << "-----";           
-        cout << setw(keyw) << "-----";                                  
-        cout << setw(11) << "-----" << setw(11) << "------";            
-        STAT4(cout << setw(keyw) << "----" << setw(keyw) << "----");    
+        cout << setw(14) << "-------" << setw(14) << "-----";           // nMalloc nFree
+        cout << setw(keyw) << "-----";                                  // ntree
+        cout << setw(11) << "-----" << setw(11) << "------";            // vmUse memUse
+        STAT4(cout << setw(keyw) << "----" << setw(keyw) << "----");    // avgD maxD
 
-        STAT16(cout << setw(7) << "--");                                
+        STAT16(cout << setw(7) << "--");                                // tt
         cout << endl;
 
-        rindx = 0;                                                      
+        rindx = 0;                                                      // zero results index
 
         for (maxKey = keyMin; maxKey <= keyMax; maxKey *= SCALEKEY) {
 
@@ -814,24 +1021,33 @@ int main(int argc, char* argv[]) {
 
             for (nt = ntMin; nt <= ntMax; nt *= 2) {
 
-                bst = new BST(maxThread);                               
+                bst = new BST(maxThread);                               // create an empty binary search tree
 
-                t0 = getWallClockMS();                                  
+                t0 = getWallClockMS();                                  // get start time
 
 #ifdef PREFILL
                 bst->preFill();
                 UINT64 pft = getWallClockMS() - t0;
-                t0 = getWallClockMS();                                  
+                t0 = getWallClockMS();                                  // get start time
 #else
-                UINT64 pft = 0;                                         
+                UINT64 pft = 0;                                         //
 #endif
 
+                //
+                // create worker threads
+                //
                 for (UINT thread = 0; thread < nt; thread++)
                     createThread(&threadH[thread], worker, (void*) (UINT64) thread);
 
+                //
+                // wait for ALL worker threads to finish
+                //
                 waitForThreadsToFinish(nt, threadH);
                 UINT64 rt = getWallClockMS() - t0;
 
+                //
+                // calculate results
+                //
                 UINT64 nop = 0, nmalloc = 0, nfree = 0, ntree;
                 UINT64 avgD = 0, maxD = 0;
                 size_t vmUse, memUse;
@@ -856,11 +1072,14 @@ int main(int argc, char* argv[]) {
 
 #if METHOD > 0
                 if (nt == 1)
-                    noppersec1 = (double) nop / (double) rt / 1000;     
+                    noppersec1 = (double) nop / (double) rt / 1000;     // {joj 12/1/18}
 #endif
 
                 totalOps += nop;
 
+                //
+                // save results
+                //
                 r[rindx].maxKey = maxKey;
                 r[rindx].nt = nt;
                 r[rindx].pft = pft;
@@ -871,9 +1090,15 @@ int main(int argc, char* argv[]) {
                 r[rindx].avgD = avgD;
                 r[rindx].maxD = maxD;
 
+                //
+                // get vmUse and memUse before deleting BST
+                //
                 vmUse = r[rindx].vmUse = getVMUse();
                 memUse = r[rindx].memUse = getMemUse();
 
+                //
+                // output results
+                //
                 cout << setw(keyw - 1) << maxKey << setw(3) << nt;
 #ifdef PREFILL
                 STAT16(cout << setw(7) << fixed << setprecision(pft < 100*1000 ? 2 : 0) << (double) pft / 1000);
@@ -882,11 +1107,11 @@ int main(int argc, char* argv[]) {
                 cout << setw(16) << nop << setw(12) << nop * 1000 / rt;
 #if METHOD > 0
                 if (ntMin == 1)
-                    cout << " [" << fixed << setprecision(2) << setw(5) << (double) nop / (double) rt / 1000 / noppersec1 << "]";   
+                    cout << " [" << fixed << setprecision(2) << setw(5) << (double) nop / (double) rt / 1000 / noppersec1 << "]";   // {joj 12/1/18}
 #endif
                 cout << setw(14) << nmalloc << setw(14) << nfree;
 
-                cout << flush;  
+                cout << flush;  // useful on linux
 
                 UINT64 errBST;
                 ntree = bst->checkBST(bst->root, errBST);
@@ -906,7 +1131,7 @@ int main(int argc, char* argv[]) {
                     cout << fixed << setprecision(2) << setw(9) << (double) memUse / M << "MB";
                 }
 
-                STAT4(double davgD = (double) avgD / (double) nop); 
+                STAT4(double davgD = (double) avgD / (double) nop); //  {joj 12/1/18}
                 STAT4(cout << fixed << setprecision(2) << setw(keyw) << setprecision(davgD < 1000 ? 2 : 0) << davgD << setw(keyw) << maxD);
 
                 UINT64 tt = getWallClockMS() - t0;
@@ -915,18 +1140,30 @@ int main(int argc, char* argv[]) {
 #endif
                 STAT16(cout << setw(7) << fixed << setprecision(tt < 100*1000 ? 2 : 0) << (double) tt / 1000);
 
+                //
+                // tidy up
+                //
                 for (UINT thread = 0; thread < nt; thread++)
                     closeThread(threadH[thread]);
 
+                //
+                // check for errors
+                //
                 if (errBST || (nmalloc != ntree + nfree)) {
 
                     cout << " ERROR:";
 
+                    //
+                    // BST NOT correct
+                    //
                     if (errBST) {
                         errs++;
                         cout << " BST inccorrect";
                     }
 
+                    //
+                    // nodes missing
+                    //
                     if (nmalloc != ntree + nfree) {
                         errs++;
                         cout << " diff= " << nmalloc - ntree - nfree;
@@ -936,6 +1173,9 @@ int main(int argc, char* argv[]) {
 
                 }
 
+                //
+                // accumlate averages
+                //
                 ravg[rindx].pft += r[rindx].pft;
                 ravg[rindx].rt += r[rindx].rt;
                 ravg[rindx].nop += r[rindx].nop;
@@ -951,12 +1191,14 @@ int main(int argc, char* argv[]) {
                 rindx++;
                 cout << endl;
 
-        } 
+        } // nt
 
-    } 
+    } // maxkey
 
     pressKeyToContinue();
 
     return 0;
 
 }
+
+// eof

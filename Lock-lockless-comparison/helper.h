@@ -7,23 +7,26 @@
 //
 
 #ifdef WIN32
-#include <tchar.h>          
-#include <Windows.h>        
-#include <intrin.h>         
+#include <tchar.h>          //
+#include <Windows.h>        //
+#include <intrin.h>         // intrinsics
 #endif
 
 #if __linux__
-#include <math.h>           
-#include <cpuid.h>          
-#include <string.h>         
-#include <pthread.h>        
-#include <x86intrin.h>      
-#include <limits.h>         
+#include <math.h>           // log10
+#include <cpuid.h>          // cpuid
+#include <string.h>         // strcpy
+#include <pthread.h>        // pthread_create
+#include <x86intrin.h>      // need to specify gcc flags -mrtm -mrdrnd
+#include <limits.h>         //s 
 #endif
 
-#include <iomanip>          
-#include <locale>           
+#include <iomanip>          //
+#include <locale>           //
 
+//
+// INT64 and UINT64
+//
 typedef long long INT64;
 typedef unsigned long long UINT64;
 #define INT64MIN LLONG_MIN
@@ -50,8 +53,8 @@ typedef unsigned long long UINT64;
 
 #define TLSINDEX DWORD
 #define TLSALLOC(key) key = TlsAlloc()
-#define TLSSETVALUE(tlsIndex, v) TlsSetValue(tlsIndex, v)               
-#define TLSGETVALUE(tlsIndex) TlsGetValue(tlsIndex)                     
+#define TLSSETVALUE(tlsIndex, v) TlsSetValue(tlsIndex, v)               // {joj 24/11/15}
+#define TLSGETVALUE(tlsIndex) TlsGetValue(tlsIndex)                     // {joj 24/11/15}
 
 #define thread_local __declspec(thread)
 
@@ -96,7 +99,7 @@ typedef unsigned long long UINT64;
 #define _InterlockedExchangeAdd64(addr, v)                          __sync_fetch_and_add(addr, v)
 #define _InterlockedCompareExchange(addr, newv, oldv)               __sync_val_compare_and_swap(addr, oldv, newv)
 #define _InterlockedCompareExchange64(addr, newv, oldv)             __sync_val_compare_and_swap(addr, oldv, newv)
-#define _InterlockedCompareExchange64_HLERelease(addr, newv, oldv)  __sync_val_compare_and_swap(addr, oldv, newv, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)      
+#define _InterlockedCompareExchange64_HLERelease(addr, newv, oldv)  __sync_val_compare_and_swap(addr, oldv, newv, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)      // {joj 12/1/18}
 #define _InterlockedCompareExchangePointer(addr, newv, oldv)        __sync_val_compare_and_swap(addr, oldv, newv)
 #define _InterlockedExchange_HLEAcquire(addr, val)                  __atomic_exchange_n(addr, val, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)
 #define _InterlockedExchangeAdd64_HLEAcquire(addr, val)             __atomic_exchange_n(addr, val, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)
@@ -111,49 +114,54 @@ typedef unsigned long long UINT64;
 #define TLSSETVALUE(key, v) pthread_setspecific(key, v)
 #define TLSGETVALUE(key) (size_t) pthread_getspecific(key)
 
-#define thread_local __thread                                       
+#define thread_local __thread                                       //
 
-#define Sleep(ms) usleep((ms)*1000)                                 
+#define Sleep(ms) usleep((ms)*1000)                                 //
 
 #endif
 
-extern UINT ncpu;                                                   
+extern UINT ncpu;                                                   // # logical CPUs
 
-extern void getDateAndTime(char*, int, time_t = 0);                 
-extern char* getHostName();                                         
-extern char* getOSName();                                           
-extern int getNumberOfCPUs();                                       
-extern UINT64 getPhysicalMemSz();                                   
-extern int is64bitExe();                                            
-extern size_t getMemUse();                                          
-extern size_t getVMUse();                                           
+extern void getDateAndTime(char*, int, time_t = 0);                 // getDateAndTime
+extern char* getHostName();                                         // get host name
+extern char* getOSName();                                           // get OS name
+extern int getNumberOfCPUs();                                       // get number of CPUs
+extern UINT64 getPhysicalMemSz();                                   // get RAM sz in bytes
+extern int is64bitExe();                                            // return 1 if 64 bit .exe
+extern size_t getMemUse();                                          // get working set size
+extern size_t getVMUse();                                           // get page file usage
 
-extern UINT64 getWallClockMS();                                     
-extern void createThread(THREADH*, WORKERF, void*);                 
-extern void runThreadOnCPU(UINT);                                   
-extern void waitForThreadsToFinish(UINT, THREADH*);                 
-extern void closeThread(THREADH);                                   
+extern UINT64 getWallClockMS();                                     // get wall clock in milliseconds from some epoch
+extern void createThread(THREADH*, WORKERF, void*);                 //
+extern void runThreadOnCPU(UINT);                                   // run thread on CPU
+extern void waitForThreadsToFinish(UINT, THREADH*);                 //
+extern void closeThread(THREADH);                                   //
 
-extern UINT64 rand(UINT64&);                                        
-#define RDRANDSTEP(r)   _rdrand64_step(r)                           
+extern UINT64 rand(UINT64&);                                        //
+#define RDRANDSTEP(r)   _rdrand64_step(r)                           // {joj 28/11/15}
 
-extern int cpu64bit();                                              
-extern int cpuFamily();                                             
-extern int cpuModel();                                              
-extern int cpuStepping();                                           
-extern char *cpuBrandString();                                      
+extern int cpu64bit();                                              // return 1 if CPU is 64 bit
+extern int cpuFamily();                                             // CPU family
+extern int cpuModel();                                              // CPU model
+extern int cpuStepping();                                           // CPU stepping
+extern char *cpuBrandString();                                      // CPU brand string
 
-extern int rtmSupported();                                          
-extern int hleSupported();                                          
+extern int rtmSupported();                                          // return 1 if RTM supported (restricted transactional memory)
+extern int hleSupported();                                          // return 1 if HLE supported (hardware lock elision)
 
-extern int getCacheInfo(int, int, int &, int &, int&);              
-extern int getCacheLineSz();                                        
-extern UINT getPageSz();                                            
+extern int getCacheInfo(int, int, int &, int &, int&);              // getCacheInfo
+extern int getCacheLineSz();                                        // get cache line sz
+extern UINT getPageSz();                                            // get page size
 
-extern void pauseIfKeyPressed();                                    
-extern void pressKeyToContinue();                                   
-extern void quit(int = 0);                                          
+extern void pauseIfKeyPressed();                                    // pause if key pressed
+extern void pressKeyToContinue();                                   // press key to continue
+extern void quit(int = 0);                                          // quit
 
+//
+// CommaLocale
+//
+// VS2015 BUG doesn't output comma thousands separator in RELEASE mode {joj 25/11/15}
+//
 class CommaLocale : public std::numpunct<char> {
 protected:
     virtual char do_thousands_sep() const { return ','; }
@@ -162,3 +170,5 @@ protected:
 
 extern void setCommaLocale();
 extern void setLocale();
+
+// eof
