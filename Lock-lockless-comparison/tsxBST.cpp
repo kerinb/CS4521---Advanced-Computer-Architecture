@@ -14,7 +14,7 @@ using namespace std;
 
 #define K                   1024LL              
 #define M                   (K*K)               
-define G                   (K*K*K)             
+#define G                   (K*K*K)             
 
 //
 // METHOD 0: no lock single thread
