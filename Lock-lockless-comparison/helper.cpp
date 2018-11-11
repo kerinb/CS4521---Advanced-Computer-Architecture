@@ -400,6 +400,7 @@ void closeThread(THREADH threadH) {
 // waitForThreadsToFinish
 //
 void waitForThreadsToFinish(UINT nt, THREADH *threadH) {
+cout << nt << endl;
 #ifdef WIN32
     WaitForMultipleObjects(nt, threadH, true, INFINITE);
 #elif __linux__
