@@ -247,10 +247,7 @@ public:
 private:                                                    // private
 
     ALIGN(64) volatile long lock;                           // lock
-
-#if METHOD == 2
-    int abortNum;
-#endif
+    volatile long abortNum;
 
     int addTSX(Node*);                                      // add key into tree {joj 25/11/15}
     Node* removeTSX(INT64);                                 // remove key from tree {joj 25/11/15}
@@ -278,13 +275,8 @@ BST::BST(UINT nt)  {
     for (UINT thread = 0; thread < nt; thread++)                        //
         PT(this, thread)->thread = thread;                              //
     root = NULL;                                                        //
-
     lock = 0;
-
-#if METHOD == 2
     abortNum = 0;
-#endif
-
 }
 
 #if defined(RECYCLENODES)
@@ -355,6 +347,7 @@ BST::~BST() {
 //
 // METHOD 0: NO lock single thread
 // METHOD 1: testAndTestAndSet
+// METHOD 2: HLE testAndTestAndSet
 //
 // return 1 if key in tree
 //
@@ -368,14 +361,16 @@ int BST::contains(INT64 key) {
             _mm_pause();
         } while (lock);
     }
-#elif METHOD == 2
+#endif
+#if METHOD == 2
     while(_InterlockedExchange_HLEAcquire(&lock, 1)){ 
     	abortNum++;
         do {
             _mm_pause();
         } while(lock);
     }
-#elif METHOD == 3
+#endif
+#if METHOD == 3
 	cout << "implement" << endl;
 #endif
 
@@ -391,9 +386,11 @@ int BST::contains(INT64 key) {
         
 #if METHOD == 1
     lock = 0;
-#elif METHOD == 2
+#endif
+#if METHOD == 2
     _Store_HLERelease(&lock, 0);
-#elif METHOD == 3
+#endif
+#if METHOD == 3
 	cout << "implement" << endl;
 #endif
 
@@ -404,9 +401,11 @@ int BST::contains(INT64 key) {
 
 #if METHOD == 1
     lock = 0;
-#elif METHOD == 2
+#endif
+#if METHOD == 2
     _Store_HLERelease(&lock, 0);
-#elif METHOD == 3
+#endif
+#if METHOD == 3
 	cout << "implement" << endl;
 #endif
 
@@ -419,6 +418,7 @@ int BST::contains(INT64 key) {
 //
 // METHOD 0: NO lock single thread
 // METHOD 1: testAndTestAndSet
+// METHOD 2: HLE testAndTestAndSet
 //
 // return 1 if key found
 //
@@ -432,14 +432,16 @@ int BST::addTSX(Node *n) {
             _mm_pause();
         } while (lock);
     }
-#elif METHOD == 2
+#endif
+#if METHOD == 2
     while(_InterlockedExchange_HLEAcquire(&lock, 1)){
     abortNum++;
         do {
             _mm_pause();
         } while(lock);
     }
-#elif METHOD == 3
+#endif
+#if METHOD == 3
 	cout << "implement" << endl;
 #endif
 
@@ -455,9 +457,11 @@ int BST::addTSX(Node *n) {
         } else {
 #if METHOD == 1
             lock = 0;
-#elif METHOD == 2
+#endif
+#if METHOD == 2
     _Store_HLERelease(&lock, 0);
-#elif METHOD == 3
+#endif
+#if METHOD == 3
 	cout << "implement" << endl;
 #endif
 
@@ -470,9 +474,11 @@ int BST::addTSX(Node *n) {
     *pp = n;
 #if METHOD == 1
     lock = 0;
-#elif METHOD == 2
+#endif
+#if METHOD == 2
     _Store_HLERelease(&lock, 0);
-#elif METHOD == 3
+#endif
+#if METHOD == 3
 	cout << "implement" << endl;
 #endif
 
@@ -498,14 +504,16 @@ Node* BST::removeTSX(INT64 key) {
             _mm_pause();
         } while (lock);
     }
-#elif METHOD == 2
+#endif
+#if METHOD == 2
     while (_InterlockedExchange_HLEAcquire(&lock, 1)){
 	    abortNum++;
     	do {
     		_mm_pause();
     	} while(lock);
     }
-#elif METHOD == 3
+#endif
+#if METHOD == 3
 	cout << "implement" << endl;
 #endif
 
@@ -527,9 +535,11 @@ Node* BST::removeTSX(INT64 key) {
     if (p == NULL) {
 #if METHOD == 1
         lock = 0;
-#elif METHOD == 2
+#endif
+#if METHOD == 2
 	_Store_HLERelease(&lock, 1);
-#elif METHOD == 3
+#endif
+#if METHOD == 3
 	cout << "implement" << endl;
 #endif
 
@@ -566,9 +576,11 @@ Node* BST::removeTSX(INT64 key) {
 
 #if METHOD == 1
     lock = 0;
-#elif METHOD == 2
+#endif
+#if METHOD == 2
 	_Store_HLERelease(&lock, 0);
-#elif METHOD == 3
+#endif
+#if METHOD == 3
 	cout << "implement" << endl;
 #endif
 
