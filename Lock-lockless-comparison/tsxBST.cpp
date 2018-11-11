@@ -372,6 +372,7 @@ int BST::contains(INT64 key) {
 	cout << "acquire lock - BST contains" << endl;
     while(_InterlockedExchange_HLEAcquire(&lock, 1)){ 
     	abortNum++;
+    	cout << abortNum << endl;
         do {
             _mm_pause();
         } while(lock);
@@ -439,6 +440,7 @@ int BST::addTSX(Node *n) {
 	cout << "acquire lock - add TSX" << endl;
     while(_InterlockedExchange_HLEAcquire(&lock, 1)){
     abortNum++;
+    cout << abortNum << endl;
         do {
             _mm_pause();
         } while(lock);
@@ -508,6 +510,7 @@ Node* BST::removeTSX(INT64 key) {
 	cout << "acquire lock - remove TSX" << endl;
     while (_InterlockedExchange_HLEAcquire(&lock, 1)){
 	    abortNum++;
+	    cout << abortNum << endl;
     	do {
     		_mm_pause();
     	} while(lock);
