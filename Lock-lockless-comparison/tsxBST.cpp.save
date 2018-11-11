@@ -3,18 +3,21 @@
 //
 // Copyright (C) 2013 - 2018 jones@scss.tcd.ie
 //
+                           // object pointed to by p is volatile
+// int* volatile p;                             // p is volatile
+//
 
-#include "helper.h"                            
+#include "helper.h"                             //
 
-#include <iostream>                            
-#include <sstream>                             
-#include <iomanip>                             
+#include <iostream>                             //
+#include <sstream>                              // stringstream
+#include <iomanip>                              // setprecision
 
-using namespace std;                            
+using namespace std;                            // cout
 
-#define K                   1024LL              
-#define M                   (K*K)               
-define G                   (K*K*K)             
+#define K                   1024LL              // NB: 64 bit
+#define M                   (K*K)               //
+#define G                   (K*K*K)             //
 
 //
 // METHOD 0: no lock single thread
@@ -26,22 +29,44 @@ define G                   (K*K*K)
 // METHOD 3: RTM
 //
 
-#define METHOD              1		
+//#define METHOD              0                   // METHOD = 0 = single thread to randomly add/remove keys from bst for Nsecs with maxKEy ranging from 16 - 1'048'576.
+#define METHOD 		    1			// METHOD = 1 = same tests are performed for 1-2*NCPU. The BST is lock protected
+//#define METHOD              2			// METHOD = 2 = TATAS lock is replaced with a HLE TATAS lock.
+//#define METHOD              3			// METHOD = 3 = BST updated with transactional memory
+//#define MOVENODE                              // move node rather than content
 #define PREFILL             0                   // pre-fill with odd integers 0 .. maxKey-1 => 0: perfect 1: right list 2: left list
 
-#define MINKEY              (16)               
-#define MAXKEY              (1*M)              
-#define SCALEKEY            (4)                
+//
+// key
+//
+#define MINKEY              (16)                // min key
+#define MAXKEY              (1*M)               // max key
+#define SCALEKEY            (4)                 // scale key by SCALEKEY
 
+//
+// number of threads
+//
 #define MINNT               1                   // min number of threads
 
-#define NSECONDS            2                  
+//
+// run each test for NSECONDS
+//
+#define NSECONDS            2                   // run each test for NSECONDS
 
+//
+// statistics
+//
 #define STATS               0x17                // STATS bit MASK 1:commit 2:abort 4:depth 8:tsxStatus 16:times
 
-#define ALIGNED                              
-#define RECYCLENODES                         
+//
+// memory management
+//
+#define ALIGNED                               // Node cache aligned
+#define RECYCLENODES                          // recycle nodes
 
+//
+// work load
+//
 //#define CONTAINS          100                 // % contains (100-contains)/2 adds and removes
 #define NOP                 1000                // number of operations between tests for exceeding runtime
 
