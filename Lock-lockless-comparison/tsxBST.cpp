@@ -248,7 +248,7 @@ private:                                                    // private
 
     ALIGN(64) volatile long lock;                           // lock
 
-#if METHOD == 2 || 3
+#if METHOD == 2
     int abortNum;
 #endif
 
@@ -281,7 +281,7 @@ BST::BST(UINT nt)  {                                                    //
 
     lock = 0;
 
-#if METHOD == 2 || 3
+#if METHOD == 2
     abortNum = 0;
 #endif
 
@@ -369,9 +369,9 @@ int BST::contains(INT64 key) {
         } while (lock);
     }
 #endif
-
 #if METHOD == 2
-    while(_InterlockedExchange_HLEAcquire(&lock, 1) == 1){ // this should be mapped onto a linux equivelant!
+    while(_InterlockedExchange_HLEAcquire(&lock, 1)){ 
+    	abortNum++;
         do {
             _mm_pause();
         } while(lock);
@@ -390,7 +390,6 @@ int BST::contains(INT64 key) {
 #if METHOD == 1
             lock = 0;
 #endif
-
 #if METHOD == 2
     _Store_HLERelease(&lock, 0);
 #endif
@@ -434,6 +433,7 @@ int BST::addTSX(Node *n) {
 
 #if METHOD == 2
     while(_InterlockedExchange_HLEAcquire(&lock, 1)){
+    abortNum++;
         do {
             _mm_pause();
         } while(lock);
@@ -499,6 +499,7 @@ Node* BST::removeTSX(INT64 key) {
 
 #if METHOD == 2
     while (_InterlockedExchange_HLEAcquire(&lock, 1)){
+	    abortNum++;
     	do {
     		_mm_pause();
     	} while(lock);
