@@ -405,6 +405,7 @@ void waitForThreadsToFinish(UINT nt, THREADH *threadH) {
     WaitForMultipleObjects(nt, threadH, true, INFINITE);
 #elif __linux__
     for (UINT thread = 0; thread < nt; thread++)
+    	cout << thread << endl;
         pthread_join(threadH[thread], NULL);
 #endif
 }
