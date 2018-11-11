@@ -246,9 +246,7 @@ public:
 
 private:                                                    // private
 
-#if METHOD == 1
     ALIGN(64) volatile long lock;                           // lock
-#endif
 
 #if METHOD == 2 || 3
     int abortNum;
@@ -281,9 +279,8 @@ BST::BST(UINT nt)  {                                                    //
         PT(this, thread)->thread = thread;                              //
     root = NULL;                                                        //
 
-#if METHOD == 1
     lock = 0;
-#endif
+
 #if METHOD == 2 || 3
     abortNum = 0;
 #endif
