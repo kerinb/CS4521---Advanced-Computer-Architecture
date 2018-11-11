@@ -925,7 +925,7 @@ void header() {
 #endif
 #if METHOD == 2
 	cout << "BST [HLE testAndTestAndSet lock]";
-#endif;
+#endif
 
     cout << " NCPUS=" << ncpu << " RAM=" << (getPhysicalMemSz() + G - 1) / G << "GB ";
 
