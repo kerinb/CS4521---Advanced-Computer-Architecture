@@ -1375,7 +1375,7 @@ int main(int argc, char* argv[]) {
                 STAT16(cout << setw(7) << fixed << setprecision(tt < 100*1000 ? 2 : 0) << (double) tt / 1000);
 
 #if METHOD == 3
-				cout << setw(7) << fixed << setprecision(0) << 100.00*(r[rindx].nop-r[rindx].aborts)/r[rindx].nop << "% " << r[rindx].aborts;
+		cout << setw(7) << fixed << 100.0*((r[rindx].nop-r[rindx].aborts)/r[rindx].nop) << "% " << r[rindx].aborts;
 #endif
 
                 //
