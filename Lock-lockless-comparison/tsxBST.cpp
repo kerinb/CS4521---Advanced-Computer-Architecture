@@ -1011,7 +1011,7 @@ void BST::preFill() {
 // worker thread
 //
 WORKER worker(void* vthread) {
-
+	cout << "test" << endl;
     PerThreadData *pt = PT(bst, (UINT64)vthread);       // {joj 25/11/15}
     TLSSETVALUE(tlsPtIndx, pt);                         // {joj 25/11/15}
 
@@ -1057,7 +1057,7 @@ WORKER worker(void* vthread) {
     }
 
 #if METHOD == 3
-	aborts[(int)((size_t) vthread)] = abortNum;
+	aborts[(int)((size_t) vthread)] = 0;
 #endif
 
     return 0;
