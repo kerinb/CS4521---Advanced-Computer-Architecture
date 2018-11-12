@@ -105,6 +105,10 @@ UINT64 t0;                                      // start time of test
 INT64 maxKey;                                   // 0 .. keyMax-1
 UINT64 totalOps = 0;                            // cumulative ops
 
+#if METHOD == 3
+	UINT64* aborts;								// used to count all aborts for RTM
+#endif
+
 THREADH *threadH;                               // thread handles
 
 TLSINDEX tlsPtIndx;                             // {joj 25/11/15}
@@ -384,8 +388,7 @@ int BST::contains(INT64 key) {
 			status = _xbegin();
 		} else { // otherwise, grab a lock
 			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
-				abortNum++;
-				cout << abortNum << endl;																
+				abortNum++;																
 				do {																		
 					_mm_pause();														
 				} while (lock == 1);													
@@ -619,7 +622,8 @@ Node* BST::removeTSX(INT64 key) {
 			status = _xbegin();
 		} else { // otherwise, grab a lock
 			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
-				abortNum++;																
+				abortNum++;	
+				cout << abortNum << endl;															
 				do {																		
 					_mm_pause();														
 				} while (lock == 1);													
@@ -1053,7 +1057,7 @@ WORKER worker(void* vthread) {
     }
 
 #if METHOD == 3
-	aborts[(int)((size_t) vthread)] = pt.aborts;
+	aborts[(int)((size_t) vthread)] = 0;
 #endif
 
     return 0;
