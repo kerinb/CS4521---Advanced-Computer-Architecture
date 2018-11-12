@@ -1350,7 +1350,7 @@ int main(int argc, char* argv[]) {
                 ntree = bst->checkBST(bst->root, errBST);
                 r[rindx].ntree = ntree;
                 cout << setw(keyw) << ntree;
-                cout << bst->abortNum;
+                cout << "ABORT NUM" << bst->abortNum;
                 delete bst;
 
                 if (vmUse / G) {
@@ -1432,7 +1432,7 @@ int main(int argc, char* argv[]) {
         } // nt
 
     } // maxkey
-	cout <<  ;
+;
     pressKeyToContinue();
 
     return 0;
