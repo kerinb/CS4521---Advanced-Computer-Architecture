@@ -231,8 +231,6 @@ public:
     PerThreadData *perThreadData;                           // per thread data
     Node* volatile root;                                    //
 
-	ALIGN(64) volatile long abortNum;	
-
     BST(UINT);                                              // constructor
     ~BST();                                                 // destructor
 
@@ -249,6 +247,7 @@ public:
 private:                                                    // private
 
     ALIGN(64) volatile long lock;                           // lock
+	ALIGN(64) volatile long abortNum;
 
     int addTSX(Node*);                                      // add key into tree {joj 25/11/15}
     Node* removeTSX(INT64);                                 // remove key from tree {joj 25/11/15}
@@ -353,7 +352,7 @@ BST::~BST() {
 // return 1 if key in tree
 //
 int BST::contains(INT64 key) {
-    
+ 
     PerThreadData *pt = (PerThreadData*)TLSGETVALUE(tlsPtIndx);
 
 #if METHOD == 1
@@ -1022,9 +1021,6 @@ int main(int argc, char* argv[]) {
         quit();
         return 1;
     }
-    
-    abortNum = (UINT64*) ALIGNED_MALLOC(maxThread*sizeof(UINT64), lineSz);
-
 #endif
 
 #ifdef WIN32
