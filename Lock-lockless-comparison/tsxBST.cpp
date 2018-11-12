@@ -386,11 +386,12 @@ int BST::contains(INT64 key) {
 		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
 		} else { // otherwise, grab a lock
-			while (_InterlockedExchange(&lock, 1)) {
-       			do {
-		            _mm_pause();
-        		} while (lock);
-		    }
+			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
+				abortNum++;																
+				do {																		
+					_mm_pause();														
+				} while (lock == 1);													
+			}
 		}
 		cout << "test " << endl;		
 		if (status == _XBEGIN_STARTED){ // If I can transact
@@ -440,7 +441,7 @@ int BST::contains(INT64 key) {
 	if(state == TRANSACTION){
 		_xend();
 	} else {
-		lock = 0;
+	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
 
@@ -459,7 +460,7 @@ int BST::contains(INT64 key) {
 	if(state == TRANSACTION){
 		_xend();
 	} else {
-		lock = 0;
+	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
 
@@ -503,11 +504,12 @@ int BST::addTSX(Node *n) {
 		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
 		} else { // otherwise, grab a lock
-			while (_InterlockedExchange(&lock, 1)) {
-       			do {
-		            _mm_pause();
-        		} while (lock);
-		    }
+			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
+				abortNum++;																
+				do {																		
+					_mm_pause();														
+				} while (lock == 1);													
+			}
 		}
 		
 		if (status == _XBEGIN_STARTED){ // If I can transact
@@ -554,7 +556,7 @@ int BST::addTSX(Node *n) {
 	if(state == TRANSACTION){
 		_xend();
 	} else {
-		lock = 0;
+	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
 
@@ -575,7 +577,7 @@ int BST::addTSX(Node *n) {
 	if(state == TRANSACTION){
 		_xend();
 	} else {
-		lock = 0;
+	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
 
@@ -618,11 +620,12 @@ Node* BST::removeTSX(INT64 key) {
 		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
 		} else { // otherwise, grab a lock
-			while (_InterlockedExchange(&lock, 1)) {
-       			do {
-		            _mm_pause();
-        		} while (lock);
-		    }
+			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
+				abortNum++;																
+				do {																		
+					_mm_pause();														
+				} while (lock == 1);													
+			}
 		}
 		
 		if (status == _XBEGIN_STARTED){ // If I can transact
@@ -675,7 +678,7 @@ Node* BST::removeTSX(INT64 key) {
 	if(state == TRANSACTION){
 		_xend();
 	} else {
-		lock = 0;
+	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
 
@@ -720,7 +723,7 @@ Node* BST::removeTSX(INT64 key) {
 	if(state == TRANSACTION){
 		_xend();
 	} else {
-		lock = 0;
+	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
 
@@ -1053,7 +1056,7 @@ WORKER worker(void* vthread) {
     }
 
 #if METHOD == 3
-	aborts[thread] = abortNum;
+	aborts[vthread] = abortNum;
 #endif
 
     return 0;
