@@ -1210,6 +1210,7 @@ int main(int argc, char* argv[]) {
         STAT16(cout << setw(7) << "tt");
         cout << endl;
 
+
         cout << setw(keyw - 1) << "------" << setw(3) << "--";          // maxKey nt
 #ifdef PREFILL
         STAT16(cout << setw(7) << "---");                               // pft
