@@ -623,7 +623,7 @@ Node* BST::removeTSX(INT64 key) {
 		} else { // otherwise, grab a lock
 			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
 				abortNum++;	
-				cout << abortNum << endl;															
+												
 				do {																		
 					_mm_pause();														
 				} while (lock == 1);													
