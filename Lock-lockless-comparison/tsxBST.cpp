@@ -1056,7 +1056,7 @@ WORKER worker(void* vthread) {
     }
 
 #if METHOD == 3
-	aborts[vthread] = abortNum;
+	aborts[(int)((size_t) vthread)] = BST.abortNum;
 #endif
 
     return 0;
