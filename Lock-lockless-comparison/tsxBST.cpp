@@ -25,7 +25,7 @@ using namespace std;
 //
 // METHOD 3: RTM
 //
-
+int T = 0;
 #define METHOD              3
 #define PREFILL             0                   // pre-fill with odd integers 0 .. maxKey-1 => 0: perfect 1: right list 2: left list
 #define TRANSACTION			0
@@ -386,8 +386,10 @@ int BST::contains(INT64 key) {
 		UINT status = _XBEGIN_STARTED;
 		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
+			T = 0;
 		} else { // otherwise, grab a lock
-			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
+			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){				
+				T = 1; 
 				abortNum++;																
 				do {																		
 					_mm_pause();														
@@ -1431,7 +1433,7 @@ int main(int argc, char* argv[]) {
         } // nt
 
     } // maxkey
-
+	cout << T ;
     pressKeyToContinue();
 
     return 0;
