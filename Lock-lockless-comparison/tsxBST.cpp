@@ -391,12 +391,14 @@ int BST::contains(INT64 key) {
 		}
 		
 		if (status == _XBEGIN_STARTED){ // If I can transact
+			cout << "transaction begin " << endl;
 			if(state == TRANSACTION && lock){ 
 				_xabort(0xA0); // abort if lock is already set
 			} else {
 				break;
 			}
 		} else {
+			cout << "transaction fail " << endl;
 			// the transaction aborted
 			if(lock){
 				do{
