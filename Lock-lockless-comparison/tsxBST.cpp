@@ -1322,6 +1322,7 @@ int main(int argc, char* argv[]) {
                 r[rindx].nfree = nfree;
                 r[rindx].avgD = avgD;
                 r[rindx].maxD = maxD;
+                r[rindx].aborts = bst->abortNum;
 
                 //
                 // get vmUse and memUse before deleting BST
@@ -1350,7 +1351,6 @@ int main(int argc, char* argv[]) {
                 ntree = bst->checkBST(bst->root, errBST);
                 r[rindx].ntree = ntree;
                 cout << setw(keyw) << ntree;
-                cout << bst->abortNum;
                 delete bst;
 
                 if (vmUse / G) {
@@ -1432,7 +1432,7 @@ int main(int argc, char* argv[]) {
         } // nt
 
     } // maxkey
-	cout <<  ;
+
     pressKeyToContinue();
 
     return 0;
