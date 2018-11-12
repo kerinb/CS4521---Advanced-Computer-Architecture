@@ -440,10 +440,8 @@ int BST::contains(INT64 key) {
 #endif
 #if METHOD == 3
 	if(state == TRANSACTION){
-		T=0;
 		_xend();
 	} else {
-		T=1;
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
@@ -1352,6 +1350,7 @@ int main(int argc, char* argv[]) {
                 ntree = bst->checkBST(bst->root, errBST);
                 r[rindx].ntree = ntree;
                 cout << setw(keyw) << ntree;
+                cout << bst->abortNum;
                 delete bst;
 
                 if (vmUse / G) {
@@ -1433,7 +1432,7 @@ int main(int argc, char* argv[]) {
         } // nt
 
     } // maxkey
-	cout << T ;
+	cout <<  ;
     pressKeyToContinue();
 
     return 0;
