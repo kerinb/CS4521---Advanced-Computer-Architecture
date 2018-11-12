@@ -376,35 +376,39 @@ int BST::contains(INT64 key) {
 #if METHOD == 3
 	int state = TRANSACTION;
 	int attempt = 1;
-
-	while(1){
+	while(1){ // while I dont have a lock/ ability to commit transaction
 		UINT status = _XBEGIN_STARTED;
-		if(state == TRANSACTION){ // try transcation
+		cout << status << endl;
+		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
-		} else { // otherwise try obtian
+			cout << status << endl;
+		} else { // otherwise, grab a lock
 			while (_InterlockedExchange(&lock, 1)) {
-				do {
-				    _mm_pause();
-				} while (lock);
-			}
+       			do {
+		            _mm_pause();
+        		} while (lock);
+		    }
 		}
-
-		if (status == _XBEGIN_STARTED){
-			if(state == TRANSACTION && &lock){
-				_xabort(0xA0);
+		
+		if (status == _XBEGIN_STARTED){ // If I can transact
+			if(state == TRANSACTION && lock){ 
+				_xabort(0xA0); // abort if lock is already set
+			} else {
+				break;
 			}
-			break;
-		} else{ // Transaction aborted
-			if (&lock){
-				do {
+		} else {
+			// the transaction aborted
+			if(lock){
+				do{
 					_mm_pause();
-				} while(&lock);
+				} while(lock);
 			} else {
 				volatile UINT64 wait = attempt << 4; // initialise wait and delay by ...
-				while (wait--); 
+				while (wait--);
 			}
-			if(++attempt >= MAXATTEMPT){
-				state = LOCK;
+			
+			if (++attempt >= MAXATTEMPT) {
+				state = LOCK; // execute non transactionally by obtaining lock
 			}
 		}
 	}
@@ -488,35 +492,39 @@ int BST::addTSX(Node *n) {
 #if METHOD == 3
 	int state = TRANSACTION;
 	int attempt = 1;
-
-	while(1){
+	while(1){ // while I dont have a lock/ ability to commit transaction
 		UINT status = _XBEGIN_STARTED;
-		if(state == TRANSACTION){ // try transcation
+		cout << status << endl;
+		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
-		} else { // otherwise try obtian
+			cout << status << endl;
+		} else { // otherwise, grab a lock
 			while (_InterlockedExchange(&lock, 1)) {
-				do {
-				    _mm_pause();
-				} while (lock);
-			}
+       			do {
+		            _mm_pause();
+        		} while (lock);
+		    }
 		}
-
-		if (status == _XBEGIN_STARTED){
-			if(state == TRANSACTION && &lock){
-				_xabort(0xA0);
+		
+		if (status == _XBEGIN_STARTED){ // If I can transact
+			if(state == TRANSACTION && lock){ 
+				_xabort(0xA0); // abort if lock is already set
+			} else {
+				break;
 			}
-			break;
-		} else{ // Transaction aborted
-			if (&lock){
-				do {
+		} else {
+			// the transaction aborted
+			if(lock){
+				do{
 					_mm_pause();
-				} while(&lock);
+				} while(lock);
 			} else {
 				volatile UINT64 wait = attempt << 4; // initialise wait and delay by ...
-				while (wait--); 
+				while (wait--);
 			}
-			if(++attempt >= MAXATTEMPT){
-				state = LOCK;
+			
+			if (++attempt >= MAXATTEMPT) {
+				state = LOCK; // execute non transactionally by obtaining lock
 			}
 		}
 	}
@@ -601,35 +609,39 @@ Node* BST::removeTSX(INT64 key) {
 #if METHOD == 3
 	int state = TRANSACTION;
 	int attempt = 1;
-
-	while(1){
+	while(1){ // while I dont have a lock/ ability to commit transaction
 		UINT status = _XBEGIN_STARTED;
-		if(state == TRANSACTION){ // try transcation
+		cout << status << endl;
+		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
-		} else { // otherwise try obtian
+			cout << status << endl;
+		} else { // otherwise, grab a lock
 			while (_InterlockedExchange(&lock, 1)) {
-				do {
-				    _mm_pause();
-				} while (lock);
-			}
+       			do {
+		            _mm_pause();
+        		} while (lock);
+		    }
 		}
-
-		if (status == _XBEGIN_STARTED){
-			if(state == TRANSACTION && &lock){
-				_xabort(0xA0);
+		
+		if (status == _XBEGIN_STARTED){ // If I can transact
+			if(state == TRANSACTION && lock){ 
+				_xabort(0xA0); // abort if lock is already set
+			} else {
+				break;
 			}
-			break;
-		} else{ // Transaction aborted
-			if (&lock){
-				do {
+		} else {
+			// the transaction aborted
+			if(lock){
+				do{
 					_mm_pause();
-				} while(&lock);
+				} while(lock);
 			} else {
 				volatile UINT64 wait = attempt << 4; // initialise wait and delay by ...
-				while (wait--); 
+				while (wait--);
 			}
-			if(++attempt >= MAXATTEMPT){
-				state = LOCK;
+			
+			if (++attempt >= MAXATTEMPT) {
+				state = LOCK; // execute non transactionally by obtaining lock
 			}
 		}
 	}
