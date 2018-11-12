@@ -28,6 +28,9 @@ using namespace std;
 
 #define METHOD              2
 #define PREFILL             0                   // pre-fill with odd integers 0 .. maxKey-1 => 0: perfect 1: right list 2: left list
+#define TRANSACTION			0
+#define LOCK				1
+#define MAXATTEMPT			5
 
 #define MINKEY              (16)               
 #define MAXKEY              (1*M)              
@@ -352,7 +355,7 @@ BST::~BST() {
 // return 1 if key in tree
 //
 int BST::contains(INT64 key) {
- 
+    
     PerThreadData *pt = (PerThreadData*)TLSGETVALUE(tlsPtIndx);
 
 #if METHOD == 1
@@ -371,7 +374,40 @@ int BST::contains(INT64 key) {
 	}
 #endif
 #if METHOD == 3
-	cout << "implement" << endl;
+	int state = TRANSACTION;
+	int attempt = 1;
+
+	while(1){
+		UINT status = _XBEGIN_STARTED;
+		if(state == TRANSACTION){ // try transcation
+			status = _xbegin();
+		} else { // otherwise try obtian
+			while (_InterlockedExchange(&lock, 1)) {
+				do {
+				    _mm_pause();
+				} while (lock);
+			}
+		}
+
+		if (status == _XBEGIN_STARTED){
+			if(state == TRANSACTION && &lock){
+				_xabort(0xA0);
+			}
+			break;
+		} else{ // Transaction aborted
+			if (&lock){
+				do {
+					_mm_pause();
+				} while(&lock);
+			} else {
+				volatile UINT64 wait = attempt << 4; // initialise wait and delay by ...
+				while (wait--); 
+			}
+			if(++attempt >= MAXATTEMPT){
+				state = LOCK;
+			}
+		}
+	}
 #endif
 
     Node *p = root;
@@ -391,7 +427,11 @@ int BST::contains(INT64 key) {
    	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 #endif
 #if METHOD == 3
-	cout << "implement" << endl;
+	if(state == TRANSACTION){
+		_xend();
+	} else {
+		lock = 0;
+	}
 #endif
 
             STAT4(DSUM);
@@ -406,7 +446,11 @@ int BST::contains(INT64 key) {
 	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 #endif
 #if METHOD == 3
-	cout << "implement" << endl;
+	if(state == TRANSACTION){
+		_xend();
+	} else {
+		lock = 0;
+	}
 #endif
 
     STAT4(DSUM);
@@ -442,7 +486,40 @@ int BST::addTSX(Node *n) {
 	}
 #endif
 #if METHOD == 3
-	cout << "implement" << endl;
+	int state = TRANSACTION;
+	int attempt = 1;
+
+	while(1){
+		UINT status = _XBEGIN_STARTED;
+		if(state == TRANSACTION){ // try transcation
+			status = _xbegin();
+		} else { // otherwise try obtian
+			while (_InterlockedExchange(&lock, 1)) {
+				do {
+				    _mm_pause();
+				} while (lock);
+			}
+		}
+
+		if (status == _XBEGIN_STARTED){
+			if(state == TRANSACTION && &lock){
+				_xabort(0xA0);
+			}
+			break;
+		} else{ // Transaction aborted
+			if (&lock){
+				do {
+					_mm_pause();
+				} while(&lock);
+			} else {
+				volatile UINT64 wait = attempt << 4; // initialise wait and delay by ...
+				while (wait--); 
+			}
+			if(++attempt >= MAXATTEMPT){
+				state = LOCK;
+			}
+		}
+	}
 #endif
 
     Node* volatile *pp = &root;
@@ -462,7 +539,11 @@ int BST::addTSX(Node *n) {
    	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 #endif
 #if METHOD == 3
-	cout << "implement" << endl;
+	if(state == TRANSACTION){
+		_xend();
+	} else {
+		lock = 0;
+	}
 #endif
 
             STAT4(DSUM);
@@ -479,7 +560,11 @@ int BST::addTSX(Node *n) {
 	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 #endif
 #if METHOD == 3
-	cout << "implement" << endl;
+	if(state == TRANSACTION){
+		_xend();
+	} else {
+		lock = 0;
+	}
 #endif
 
     STAT4(DSUM);
@@ -514,7 +599,40 @@ Node* BST::removeTSX(INT64 key) {
 	}
 #endif
 #if METHOD == 3
-	cout << "implement" << endl;
+	int state = TRANSACTION;
+	int attempt = 1;
+
+	while(1){
+		UINT status = _XBEGIN_STARTED;
+		if(state == TRANSACTION){ // try transcation
+			status = _xbegin();
+		} else { // otherwise try obtian
+			while (_InterlockedExchange(&lock, 1)) {
+				do {
+				    _mm_pause();
+				} while (lock);
+			}
+		}
+
+		if (status == _XBEGIN_STARTED){
+			if(state == TRANSACTION && &lock){
+				_xabort(0xA0);
+			}
+			break;
+		} else{ // Transaction aborted
+			if (&lock){
+				do {
+					_mm_pause();
+				} while(&lock);
+			} else {
+				volatile UINT64 wait = attempt << 4; // initialise wait and delay by ...
+				while (wait--); 
+			}
+			if(++attempt >= MAXATTEMPT){
+				state = LOCK;
+			}
+		}
+	}
 #endif
 
     Node* volatile *pp = &root;
@@ -540,7 +658,11 @@ Node* BST::removeTSX(INT64 key) {
 	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 #endif
 #if METHOD == 3
-	cout << "implement" << endl;
+	if(state == TRANSACTION){
+		_xend();
+	} else {
+		lock = 0;
+	}
 #endif
 
         STAT4(DSUM);
@@ -581,7 +703,11 @@ Node* BST::removeTSX(INT64 key) {
 	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 #endif
 #if METHOD == 3
-	cout << "implement" << endl;
+	if(state == TRANSACTION){
+		_xend();
+	} else {
+		lock = 0;
+	}
 #endif
 
     STAT4(DSUM);
