@@ -239,6 +239,8 @@ public:
     PerThreadData *perThreadData;                           // per thread data
     Node* volatile root;                                    //
 
+	ALIGN(64) volatile long abortNum;
+
     BST(UINT);                                              // constructor
     ~BST();                                                 // destructor
 
@@ -255,7 +257,6 @@ public:
 private:                                                    // private
 
     ALIGN(64) volatile long lock;                           // lock
-	ALIGN(64) volatile long abortNum;
 
     int addTSX(Node*);                                      // add key into tree {joj 25/11/15}
     Node* removeTSX(INT64);                                 // remove key from tree {joj 25/11/15}
@@ -1056,7 +1057,7 @@ WORKER worker(void* vthread) {
     }
 
 #if METHOD == 3
-	aborts[(int)((size_t) vthread)] = BST.abortNum;
+	aborts[(int)((size_t) vthread)] = abortNum;
 #endif
 
     return 0;
