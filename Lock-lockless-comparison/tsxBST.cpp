@@ -1,6 +1,3 @@
-
-
-
 //
 // tsxBST.cpp
 //
@@ -108,6 +105,10 @@ UINT64 t0;                                      // start time of test
 INT64 maxKey;                                   // 0 .. keyMax-1
 UINT64 totalOps = 0;                            // cumulative ops
 
+#if METHOD == 3
+	UINT64* aborts;								// used to count all aborts for RTM
+#endif
+
 THREADH *threadH;                               // thread handles
 
 TLSINDEX tlsPtIndx;                             // {joj 25/11/15}
@@ -129,6 +130,7 @@ typedef struct {
     size_t memUse;                              // memUse
     UINT64 ntree;                               // nodes in tree
     UINT64 tt;                                  // total time (ms) [fill time] + test run time + free memory time
+    UINT64 aborts;
 } Result;
 
 Result *r, *ravg;                               // for results
@@ -1050,6 +1052,10 @@ WORKER worker(void* vthread) {
 
     }
 
+#if METHOD == 3
+	aborts[thread] = abortNum;
+#endif
+
     return 0;
 
 }
@@ -1186,6 +1192,10 @@ int main(int argc, char* argv[]) {
     r = (Result*) AMALLOC(c0*c1*sizeof(Result), lineSz);                    // for results
     ravg = (Result*) AMALLOC(c0*c1*sizeof(Result), lineSz);                 // for averages
     memset(ravg, 0, c0*c1*sizeof(Result));                                  // clear results
+
+#if METHOD == 3
+	aborts = (UINT64*)AMALLOC(maxThread*sizeof(THREADH), lineSz);
+#endif
 
         //
         // results
@@ -1358,6 +1368,10 @@ int main(int argc, char* argv[]) {
                 tt += pft;
 #endif
                 STAT16(cout << setw(7) << fixed << setprecision(tt < 100*1000 ? 2 : 0) << (double) tt / 1000);
+
+#if METHOD == 3
+				cout << setw(7) << fixed << setprecision(0) << 100.00*(r[rindx].nop-r[rindx].aborts)/r[rindx].nop << "%";
+#endif
 
                 //
                 // tidy up
