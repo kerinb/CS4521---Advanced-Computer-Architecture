@@ -408,6 +408,7 @@ int BST::contains(INT64 key) {
 			}
 			
 			if (++attempt >= MAXATTEMPT) {
+				cout << "attempt " << attempt << endl;
 				state = LOCK; // execute non transactionally by obtaining lock
 			}
 		}
@@ -611,10 +612,8 @@ Node* BST::removeTSX(INT64 key) {
 	int attempt = 1;
 	while(1){ // while I dont have a lock/ ability to commit transaction
 		UINT status = _XBEGIN_STARTED;
-		cout << "removeTSX status" << status << endl;
 		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
-			cout << "removeTSX status" << status << endl;
 		} else { // otherwise, grab a lock
 			while (_InterlockedExchange(&lock, 1)) {
        			do {
