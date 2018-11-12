@@ -14,29 +14,26 @@ using namespace std;
 
 #define K                   1024LL              
 #define M                   (K*K)               
-#define G                   (K*K*K)             
+define G                   (K*K*K)             
 
 //
 // METHOD 0: no lock single thread
 // METHOD 1: testAndTestAndSet lock
-// METHOD 2: HLE testAndTestAndSet lock
 //
 // TODO TODO TODO TODO TODO TODO TODO TODO TODO
 //
+// METHOD 2: HLE testAndTestAndSet lock
 // METHOD 3: RTM
 //
 
-#define METHOD              3
+#define METHOD              1		
 #define PREFILL             0                   // pre-fill with odd integers 0 .. maxKey-1 => 0: perfect 1: right list 2: left list
-#define TRANSACTION			0
-#define LOCK				1
-#define MAXATTEMPT			5
 
 #define MINKEY              (16)               
 #define MAXKEY              (1*M)              
 #define SCALEKEY            (4)                
 
-#define MINNT               1                   // min number of threads
+#define MINNT               1                 
 
 #define NSECONDS            2                  
 
@@ -45,91 +42,84 @@ using namespace std;
 #define ALIGNED                              
 #define RECYCLENODES                         
 
-//#define CONTAINS          100                 // % contains (100-contains)/2 adds and removes
 #define NOP                 1000                // number of operations between tests for exceeding runtime
 
 #if CONTAINS < 0 || CONTAINS > 100
 #error CONTAINS sould be in the range 0 to 100
 #endif
 
-//
-// useful MACROs
-//
-#if STATS & 1                                   //
-#define STAT1(x)    x                           //
+#if STATS & 1                                   
+#define STAT1(x)    x                           
 #else
-#define STAT1(x)                                //
+#define STAT1(x)                                
 #endif
 
-#if STATS & 2                                   //
-#define STAT2(x)    x                           //
+#if STATS & 2                                   
+#define STAT2(x)    x                           
 #else
-#define STAT2(x)                                //
+#define STAT2(x)                                
 #endif
 
 
-#if STATS & 4                                   //
-#define STAT4(x)    x                           //
+#if STATS & 4                                   
+#define STAT4(x)    x                           
 #else
-#define STAT4(x)                                //
+#define STAT4(x)                                
 #endif
 
-#if STATS & 8                                   //
-#define STAT8(x)    x                           //
+#if STATS & 8                                   
+#define STAT8(x)    x                           
 #else
-#define STAT8(x)                                //
+#define STAT8(x)                                
 #endif
 
-#if STATS & 16                                  //
-#define STAT16(x)   x                           //
+#if STATS & 16                                  
+#define STAT16(x)   x                           
 #else
-#define STAT16(x)                               //
+#define STAT16(x)                               
 #endif
 
 #define DSUM    pt->avgD += d;      \
                 if (d > pt->maxD)   \
-                    pt->maxD = d                //
+                    pt->maxD = d                
 
 #define PT(bst, thread)     ((PerThreadData*) ((BYTE*) ((bst)->perThreadData) + (thread)*ptDataSz))
 
 //
 // global variables
 //
-UINT ntMin;                                     //
-UINT nt;                                        // # threads
-UINT maxThread;                                 //
-UINT lineSz;                                    // cache line sz
-UINT ptDataSz;                                  // per thread data size
-UINT64 tStart;                                  // start time
-UINT64 t0;                                      // start time of test
-INT64 maxKey;                                   // 0 .. keyMax-1
-UINT64 totalOps = 0;                            // cumulative ops
+UINT ntMin;                                     
+UINT nt;                                        
+UINT maxThread;                                 
+UINT lineSz;                                    
+UINT ptDataSz;                                  
+UINT64 tStart;                                  
+UINT64 t0;                                      
+INT64 maxKey;                                   
+UINT64 totalOps = 0;                            
 
 THREADH *threadH;                               // thread handles
 
 TLSINDEX tlsPtIndx;                             // {joj 25/11/15}
 
-//
-// NB: ALL results
-//
 typedef struct {
-    INT64 maxKey;                               // 0 .. maxKey
-    UINT nt;                                    // # threads
-    UINT64 pft;                                 // pre fill time (ms)
-    UINT64 rt;                                  // test run time (ms)
-    UINT64 nop;                                 // nop
-    UINT64 nmalloc;                             // nmalloc
-    UINT64 nfree;                               // nfree
-    UINT64 avgD;                                // used to calculate average search depth of tree
-    UINT64 maxD;                                // max depth of tree
-    size_t vmUse;                               // vmUse
-    size_t memUse;                              // memUse
-    UINT64 ntree;                               // nodes in tree
-    UINT64 tt;                                  // total time (ms) [fill time] + test run time + free memory time
+    INT64 maxKey;                               
+    UINT nt;                                    
+    UINT64 pft;                                 
+    UINT64 rt;                                  
+    UINT64 nop;                                 
+    UINT64 nmalloc;                             
+    UINT64 nfree;                               
+    UINT64 avgD;                                
+    UINT64 maxD;                                
+    size_t vmUse;                               
+    size_t memUse;                              
+    UINT64 ntree;                               
+    UINT64 tt;                                  
 } Result;
 
-Result *r, *ravg;                               // for results
-UINT rindx;                                     // results index
+Result *r, *ravg;                               
+ rindx;                                     // results index
 UINT64 errs = 0;                                // errors
 
 class Node;                                     // forward declaration
@@ -249,8 +239,9 @@ public:
 
 private:                                                    // private
 
+#if METHOD == 1
     ALIGN(64) volatile long lock;                           // lock
-	ALIGN(64) volatile long abortNum;
+#endif
 
     int addTSX(Node*);                                      // add key into tree {joj 25/11/15}
     Node* removeTSX(INT64);                                 // remove key from tree {joj 25/11/15}
@@ -272,14 +263,17 @@ BST *bst;                                                   // binary search tre
 //
 // BST constructor
 //
-BST::BST(UINT nt)  {  
+BST::BST(UINT nt)  {                                                    //
     perThreadData = (PerThreadData*) AMALLOC(nt*ptDataSz, lineSz);      // for per thread data
     memset(perThreadData, 0, nt*ptDataSz);                              // zero
     for (UINT thread = 0; thread < nt; thread++)                        //
         PT(this, thread)->thread = thread;                              //
     root = NULL;                                                        //
+
+#if METHOD == 1
     lock = 0;
-    abortNum = 0;
+#endif
+
 }
 
 #if defined(RECYCLENODES)
@@ -350,7 +344,6 @@ BST::~BST() {
 //
 // METHOD 0: NO lock single thread
 // METHOD 1: testAndTestAndSet
-// METHOD 2: HLE testAndTestAndSet
 //
 // return 1 if key in tree
 //
@@ -365,50 +358,6 @@ int BST::contains(INT64 key) {
         } while (lock);
     }
 #endif
-#if METHOD == 2
-    while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
-		abortNum++;																
-		do {																		
-			_mm_pause();														
-		} while (lock == 1);													
-	}
-#endif
-#if METHOD == 3
-	int state = TRANSACTION;
-	int attempt = 1;
-
-	while(1){
-		UINT status = _XBEGIN_STARTED;
-		if(state == TRANSACTION){ // try transcation
-			status = _xbegin();
-		} else { // otherwise try obtian
-			while (_InterlockedExchange(&lock, 1)) {
-				do {
-				    _mm_pause();
-				} while (lock);
-			}
-		}
-
-		if (status == _XBEGIN_STARTED){
-			if(state == TRANSACTION && &lock){
-				_xabort(0xA0);
-			}
-			break;
-		} else{ // Transaction aborted
-			if (&lock){
-				do {
-					_mm_pause();
-				} while(&lock);
-			} else {
-				volatile UINT64 wait = attempt << 4; // initialise wait and delay by ...
-				while (wait--); 
-			}
-			if(++attempt >= MAXATTEMPT){
-				state = LOCK;
-			}
-		}
-	}
-#endif
 
     Node *p = root;
     STAT4(UINT64 d = 0);
@@ -419,21 +368,9 @@ int BST::contains(INT64 key) {
         } else if (key > p->key) {
             p = p->right;
         } else {
-        
 #if METHOD == 1
-    lock = 0;
+            lock = 0;
 #endif
-#if METHOD == 2
-   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#endif
-#if METHOD == 3
-	if(state == TRANSACTION){
-		_xend();
-	} else {
-		lock = 0;
-	}
-#endif
-
             STAT4(DSUM);
             return 1;
         }
@@ -442,17 +379,6 @@ int BST::contains(INT64 key) {
 #if METHOD == 1
     lock = 0;
 #endif
-#if METHOD == 2
-	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#endif
-#if METHOD == 3
-	if(state == TRANSACTION){
-		_xend();
-	} else {
-		lock = 0;
-	}
-#endif
-
     STAT4(DSUM);
     return 0;
 }
@@ -462,7 +388,6 @@ int BST::contains(INT64 key) {
 //
 // METHOD 0: NO lock single thread
 // METHOD 1: testAndTestAndSet
-// METHOD 2: HLE testAndTestAndSet
 //
 // return 1 if key found
 //
@@ -476,50 +401,6 @@ int BST::addTSX(Node *n) {
             _mm_pause();
         } while (lock);
     }
-#endif
-#if METHOD == 2
-    while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
-		abortNum++;																
-		do {																		
-			_mm_pause();														
-		} while (lock == 1);													
-	}
-#endif
-#if METHOD == 3
-	int state = TRANSACTION;
-	int attempt = 1;
-
-	while(1){
-		UINT status = _XBEGIN_STARTED;
-		if(state == TRANSACTION){ // try transcation
-			status = _xbegin();
-		} else { // otherwise try obtian
-			while (_InterlockedExchange(&lock, 1)) {
-				do {
-				    _mm_pause();
-				} while (lock);
-			}
-		}
-
-		if (status == _XBEGIN_STARTED){
-			if(state == TRANSACTION && &lock){
-				_xabort(0xA0);
-			}
-			break;
-		} else{ // Transaction aborted
-			if (&lock){
-				do {
-					_mm_pause();
-				} while(&lock);
-			} else {
-				volatile UINT64 wait = attempt << 4; // initialise wait and delay by ...
-				while (wait--); 
-			}
-			if(++attempt >= MAXATTEMPT){
-				state = LOCK;
-			}
-		}
-	}
 #endif
 
     Node* volatile *pp = &root;
@@ -535,17 +416,6 @@ int BST::addTSX(Node *n) {
 #if METHOD == 1
             lock = 0;
 #endif
-#if METHOD == 2
-   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#endif
-#if METHOD == 3
-	if(state == TRANSACTION){
-		_xend();
-	} else {
-		lock = 0;
-	}
-#endif
-
             STAT4(DSUM);
             return 0;
         }
@@ -556,17 +426,6 @@ int BST::addTSX(Node *n) {
 #if METHOD == 1
     lock = 0;
 #endif
-#if METHOD == 2
-	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#endif
-#if METHOD == 3
-	if(state == TRANSACTION){
-		_xend();
-	} else {
-		lock = 0;
-	}
-#endif
-
     STAT4(DSUM);
     return 1;
 }
@@ -590,50 +449,6 @@ Node* BST::removeTSX(INT64 key) {
         } while (lock);
     }
 #endif
-#if METHOD == 2
-    while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
-		abortNum++;																
-		do {																		
-			_mm_pause();														
-		} while (lock == 1);													
-	}
-#endif
-#if METHOD == 3
-	int state = TRANSACTION;
-	int attempt = 1;
-
-	while(1){
-		UINT status = _XBEGIN_STARTED;
-		if(state == TRANSACTION){ // try transcation
-			status = _xbegin();
-		} else { // otherwise try obtian
-			while (_InterlockedExchange(&lock, 1)) {
-				do {
-				    _mm_pause();
-				} while (lock);
-			}
-		}
-
-		if (status == _XBEGIN_STARTED){
-			if(state == TRANSACTION && &lock){
-				_xabort(0xA0);
-			}
-			break;
-		} else{ // Transaction aborted
-			if (&lock){
-				do {
-					_mm_pause();
-				} while(&lock);
-			} else {
-				volatile UINT64 wait = attempt << 4; // initialise wait and delay by ...
-				while (wait--); 
-			}
-			if(++attempt >= MAXATTEMPT){
-				state = LOCK;
-			}
-		}
-	}
-#endif
 
     Node* volatile *pp = &root;
     Node *p = root;
@@ -654,17 +469,6 @@ Node* BST::removeTSX(INT64 key) {
 #if METHOD == 1
         lock = 0;
 #endif
-#if METHOD == 2
-	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#endif
-#if METHOD == 3
-	if(state == TRANSACTION){
-		_xend();
-	} else {
-		lock = 0;
-	}
-#endif
-
         STAT4(DSUM);
         return NULL;
     }
@@ -699,17 +503,6 @@ Node* BST::removeTSX(INT64 key) {
 #if METHOD == 1
     lock = 0;
 #endif
-#if METHOD == 2
-	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#endif
-#if METHOD == 3
-	if(state == TRANSACTION){
-		_xend();
-	} else {
-		lock = 0;
-	}
-#endif
-
     STAT4(DSUM);
     return  p;
 
@@ -1063,12 +856,6 @@ void header() {
 #elif METHOD == 1
     cout << " BST [testAndTestAndSet lock]";
 #endif
-#if METHOD == 2
-	cout << "BST [HLE testAndTestAndSet lock]";
-#endif
-#if METHOD == 3
-	cout << "BST [Hardware Transactional Memory]";
-#endif
 
     cout << " NCPUS=" << ncpu << " RAM=" << (getPhysicalMemSz() + G - 1) / G << "GB ";
 
@@ -1124,7 +911,7 @@ int main(int argc, char* argv[]) {
     //cout << "sizeof(PerThreadData)=" << sizeof(PerThreadData) << " ptDataSz=" << ptDataSz << " sizeof(Result)=" << sizeof(Result);
 
     cout << endl;
-    cout << _XBEGIN_STARTED << endl;
+
 #if METHOD == 2
     //
     // check if HLE supported
@@ -1133,8 +920,6 @@ int main(int argc, char* argv[]) {
         cout << "HLE (hardware lock elision) NOT supported by this CPU" << endl;
         quit();
         return 1;
-    } else {
-    	cout << "HLE Support by this CPU" << endl;
     }
 #endif
 
@@ -1220,6 +1005,7 @@ int main(int argc, char* argv[]) {
         cout << endl;
 
         rindx = 0;                                                      // zero results index
+
         for (maxKey = keyMin; maxKey <= keyMax; maxKey *= SCALEKEY) {
 
 #if METHOD > 0
@@ -1245,12 +1031,13 @@ int main(int argc, char* argv[]) {
                 //
                 for (UINT thread = 0; thread < nt; thread++)
                     createThread(&threadH[thread], worker, (void*) (UINT64) thread);
+
                 //
                 // wait for ALL worker threads to finish
                 //
                 waitForThreadsToFinish(nt, threadH);
-                cout << "ALL threads finished" << endl;
                 UINT64 rt = getWallClockMS() - t0;
+
                 //
                 // calculate results
                 //
