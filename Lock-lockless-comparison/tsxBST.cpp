@@ -1432,11 +1432,6 @@ int main(int argc, char* argv[]) {
         } // nt
 
     } // maxkey
-<<<<<<< HEAD
-;
-=======
-
->>>>>>> ab50b4c1c1378a2e8510b2ac969a8d94e37cedfc
     pressKeyToContinue();
 
     return 0;
