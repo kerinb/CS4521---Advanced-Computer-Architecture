@@ -386,10 +386,8 @@ int BST::contains(INT64 key) {
 		UINT status = _XBEGIN_STARTED;
 		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
-			T = 0;
 		} else { // otherwise, grab a lock
-			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){				
-				T = 1; 
+			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){				 
 				abortNum++;																
 				do {																		
 					_mm_pause();														
@@ -442,8 +440,10 @@ int BST::contains(INT64 key) {
 #endif
 #if METHOD == 3
 	if(state == TRANSACTION){
+		T=0;
 		_xend();
 	} else {
+		T=1;
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
