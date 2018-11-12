@@ -378,10 +378,10 @@ int BST::contains(INT64 key) {
 	int attempt = 1;
 	while(1){ // while I dont have a lock/ ability to commit transaction
 		UINT status = _XBEGIN_STARTED;
-		cout << status << endl;
+		cout << "contains status" << status << endl;
 		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
-			cout << status << endl;
+			cout << "contains status" << status << endl;
 		} else { // otherwise, grab a lock
 			while (_InterlockedExchange(&lock, 1)) {
        			do {
@@ -494,10 +494,10 @@ int BST::addTSX(Node *n) {
 	int attempt = 1;
 	while(1){ // while I dont have a lock/ ability to commit transaction
 		UINT status = _XBEGIN_STARTED;
-		cout << status << endl;
+		cout << "addTSX status" << status << endl;
 		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
-			cout << status << endl;
+			cout << "addTSX status" << status << endl;
 		} else { // otherwise, grab a lock
 			while (_InterlockedExchange(&lock, 1)) {
        			do {
@@ -611,10 +611,10 @@ Node* BST::removeTSX(INT64 key) {
 	int attempt = 1;
 	while(1){ // while I dont have a lock/ ability to commit transaction
 		UINT status = _XBEGIN_STARTED;
-		cout << status << endl;
+		cout << "removeTSX status" << status << endl;
 		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
-			cout << status << endl;
+			cout << "removeTSX status" << status << endl;
 		} else { // otherwise, grab a lock
 			while (_InterlockedExchange(&lock, 1)) {
        			do {
