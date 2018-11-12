@@ -1225,6 +1225,7 @@ int main(int argc, char* argv[]) {
         STAT1(cout << setw(8) << "commit");
 #endif
         STAT16(cout << setw(7) << "tt");
+        cout << setw() << "abort%" << setw() << "#Abort" << set() << "N-A" << setw(7) << "(N-A)/N"
         cout << endl;
 
 
@@ -1375,7 +1376,7 @@ int main(int argc, char* argv[]) {
                 STAT16(cout << setw(7) << fixed << setprecision(tt < 100*1000 ? 2 : 0) << (double) tt / 1000);
 
 #if METHOD == 3
-				cout << setw(7) << fixed << setprecision(0) << 100.00*(r[rindx].nop-r[rindx].aborts)/r[rindx].nop << "% " << r[rindx].aborts;
+				cout << setw(7) << fixed << 100.00*((r[rindx].nop-r[rindx].aborts)/r[rindx].nop) << "% " << r[rindx].aborts << setw(7) << r[rindx].nop - r[rindx].aborts << set(7) << (r[rindx].nop - r[rindx].aborts)/r[rindx].nop;
 #endif
 
                 //
