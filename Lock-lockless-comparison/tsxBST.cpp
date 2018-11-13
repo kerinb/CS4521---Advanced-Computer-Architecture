@@ -1269,6 +1269,7 @@ int main(int argc, char* argv[]) {
                 //
                 // calculate results
                 //
+                
                 UINT64 nop = 0, nmalloc = 0, nfree = 0, ntree;
                 UINT64 avgD = 0, maxD = 0;
                 size_t vmUse, memUse;
@@ -1360,7 +1361,7 @@ int main(int argc, char* argv[]) {
 #ifdef PREFILL
                 tt += pft;
 #endif
-                STAT16(cout << setw(7) << fixed << setprecision(tt < 100*1000 ? 2 : 0) << (double) tt / 1000);
+                STAT16(cout << setw(14) << fixed << setprecision(tt < 100*1000 ? 2 : 0) << (double) tt / 1000);
 
 #if METHOD == 3
 		cout << setw(10) << fixed << setprecision(4) << 100.00*((double) r[rindx].nop - (double) r[rindx].aborts)/(double)r[rindx].nop << "% " << setw(7) << fixed << r[rindx].aborts;
