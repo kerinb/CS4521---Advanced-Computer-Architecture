@@ -1186,10 +1186,6 @@ int main(int argc, char* argv[]) {
     ravg = (Result*) AMALLOC(c0*c1*sizeof(Result), lineSz);                 // for averages
     memset(ravg, 0, c0*c1*sizeof(Result));                                  // clear results
 
-#if METHOD == 3
-	aborts = (UINT64*)AMALLOC(maxThread*sizeof(THREADH), lineSz);
-#endif
-
         //
         // results
         //
