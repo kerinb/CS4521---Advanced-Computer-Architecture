@@ -1368,7 +1368,7 @@ int main(int argc, char* argv[]) {
                 STAT4(cout << fixed << setprecision(2) << setw(keyw) << setprecision(davgD < 1000 ? 2 : 0) << davgD << setw(keyw) << maxD);
 
 #if METHOD == 3
-		cout << r[rindx].commits;
+		cout << setw(7) << fixed << r[rindx].commits;
 #endif
 
                 UINT64 tt = getWallClockMS() - t0;
