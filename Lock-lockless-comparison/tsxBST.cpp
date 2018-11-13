@@ -127,6 +127,7 @@ typedef struct {
     UINT64 ntree;                               // nodes in tree
     UINT64 tt;                                  // total time (ms) [fill time] + test run time + free memory time
     UINT64 aborts;
+    UINT64 commit;
 } Result;
 
 Result *r, *ravg;                               // for results
@@ -236,6 +237,7 @@ public:
     Node* volatile root;                                    //
 
     volatile UINT64 abortNum;
+    volatile UINT64 commitNum;
 
     BST(UINT);                                              // constructor
     ~BST();                                                 // destructor
@@ -282,6 +284,7 @@ BST::BST(UINT nt)  {
     root = NULL;                                                        //
     lock = 0;
     abortNum = 0;
+    commitNum = 0;
 }
 
 #if defined(RECYCLENODES)
@@ -435,6 +438,7 @@ int BST::contains(INT64 key) {
 #endif
 #if METHOD == 3
 	if(state == TRANSACTION){
+		commitNum++;
 		_xend();
 	} else {
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
@@ -454,6 +458,7 @@ int BST::contains(INT64 key) {
 #endif
 #if METHOD == 3
 	if(state == TRANSACTION){
+		commitNum++;
 		_xend();
 	} else {
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
@@ -549,6 +554,7 @@ int BST::addTSX(Node *n) {
 #endif
 #if METHOD == 3
 	if(state == TRANSACTION){
+		commitNum++;
 		_xend();
 	} else {
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
@@ -570,6 +576,7 @@ int BST::addTSX(Node *n) {
 #endif
 #if METHOD == 3
 	if(state == TRANSACTION){
+		commitNum++;
 		_xend();
 	} else {
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
@@ -671,6 +678,7 @@ Node* BST::removeTSX(INT64 key) {
 #endif
 #if METHOD == 3
 	if(state == TRANSACTION){
+		commitNum++;
 		_xend();
 	} else {
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
@@ -716,6 +724,7 @@ Node* BST::removeTSX(INT64 key) {
 #endif
 #if METHOD == 3
 	if(state == TRANSACTION){
+		commitNum++;
 		_xend();
 	} else {
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
@@ -1312,6 +1321,7 @@ int main(int argc, char* argv[]) {
                 r[rindx].avgD = avgD;
                 r[rindx].maxD = maxD;
                 r[rindx].aborts = bst->abortNum;
+                r[rindx].commits = bst->commitNum;
 
                 //
                 // get vmUse and memUse before deleting BST
@@ -1357,11 +1367,15 @@ int main(int argc, char* argv[]) {
                 STAT4(double davgD = (double) avgD / (double) nop); //  {joj 12/1/18}
                 STAT4(cout << fixed << setprecision(2) << setw(keyw) << setprecision(davgD < 1000 ? 2 : 0) << davgD << setw(keyw) << maxD);
 
+#if METHOD == 3
+		cout << r[rindx].commits;
+#endif
+
                 UINT64 tt = getWallClockMS() - t0;
 #ifdef PREFILL
                 tt += pft;
 #endif
-                STAT16(cout << setw(14) << fixed << setprecision(tt < 100*1000 ? 2 : 0) << (double) tt / 1000);
+                STAT16(cout << setw(7) << fixed << setprecision(tt < 100*1000 ? 2 : 0) << (double) tt / 1000);
 
 #if METHOD == 3
 		cout << setw(10) << fixed << setprecision(4) << 100.00*((double) r[rindx].nop - (double) r[rindx].aborts)/(double)r[rindx].nop << "% " << setw(7) << fixed << r[rindx].aborts;
