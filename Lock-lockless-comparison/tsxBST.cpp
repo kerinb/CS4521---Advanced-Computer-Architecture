@@ -105,10 +105,6 @@ UINT64 t0;                                      // start time of test
 INT64 maxKey;                                   // 0 .. keyMax-1
 UINT64 totalOps = 0;                            // cumulative ops
 
-#if METHOD == 3
-	UINT64* aborts;								// used to count all aborts for RTM
-#endif
-
 THREADH *threadH;                               // thread handles
 
 TLSINDEX tlsPtIndx;                             // {joj 25/11/15}
@@ -130,7 +126,7 @@ typedef struct {
     size_t memUse;                              // memUse
     UINT64 ntree;                               // nodes in tree
     UINT64 tt;                                  // total time (ms) [fill time] + test run time + free memory time
-    double aborts;
+    UINT64 aborts;
 } Result;
 
 Result *r, *ravg;                               // for results
@@ -239,7 +235,7 @@ public:
     PerThreadData *perThreadData;                           // per thread data
     Node* volatile root;                                    //
 
-    volatile double abortNum;
+    volatile UINT64 abortNum;
 
     BST(UINT);                                              // constructor
     ~BST();                                                 // destructor
@@ -373,7 +369,6 @@ int BST::contains(INT64 key) {
 #endif
 #if METHOD == 2
     while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
-		abortNum++;																
 		do {																		
 			_mm_pause();														
 		} while (lock == 1);													
@@ -491,7 +486,6 @@ int BST::addTSX(Node *n) {
 #endif
 #if METHOD == 2
     while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
-		abortNum++;																
 		do {																		
 			_mm_pause();														
 		} while (lock == 1);													
@@ -607,7 +601,6 @@ Node* BST::removeTSX(INT64 key) {
 #endif
 #if METHOD == 2
     while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
-		abortNum++;																
 		do {																		
 			_mm_pause();														
 		} while (lock == 1);													
@@ -1056,10 +1049,6 @@ WORKER worker(void* vthread) {
 
     }
 
-#if METHOD == 3
-	aborts[(int)((size_t) vthread)] = 0;
-#endif
-
     return 0;
 
 }
@@ -1225,6 +1214,9 @@ int main(int argc, char* argv[]) {
         STAT1(cout << setw(8) << "commit");
 #endif
         STAT16(cout << setw(7) << "tt");
+#if METHOD == 3
+	cout << setw(10) << fixed << "No Abort %";
+#endif
 	cout << endl;
 
         cout << setw(keyw - 1) << "------" << setw(3) << "--";          // maxKey nt
@@ -1241,7 +1233,9 @@ int main(int argc, char* argv[]) {
         cout << setw(keyw) << "-----";                                  // ntree
         cout << setw(11) << "-----" << setw(11) << "------";            // vmUse memUse
         STAT4(cout << setw(keyw) << "----" << setw(keyw) << "----");    // avgD maxD
-
+#if METHOD > 1 
+        STAT1(cout << setw(8) << "------");
+#endif
         STAT16(cout << setw(7) << "--");                                // tt
         cout << endl;
 
@@ -1373,7 +1367,7 @@ int main(int argc, char* argv[]) {
                 STAT16(cout << setw(7) << fixed << setprecision(tt < 100*1000 ? 2 : 0) << (double) tt / 1000);
 
 #if METHOD == 3
-	cout << setw(10) << fixed << 100.00*(r[rindx].nop - r[rindx].aborts)/r[rindx].nop << "% " << setw(7) << fixed << r[rindx].aborts;
+		cout << setw(10) << fixed << 100.00*((double) r[rindx].nop - (double) r[rindx].aborts)/(double)r[rindx].nop << "% " << setw(7) << fixed << r[rindx].aborts;
 #endif
 
                 //
