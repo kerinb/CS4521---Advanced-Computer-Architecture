@@ -130,7 +130,7 @@ typedef struct {
     size_t memUse;                              // memUse
     UINT64 ntree;                               // nodes in tree
     UINT64 tt;                                  // total time (ms) [fill time] + test run time + free memory time
-    double aborts;
+    UINT64 aborts;
 } Result;
 
 Result *r, *ravg;                               // for results
@@ -239,7 +239,7 @@ public:
     PerThreadData *perThreadData;                           // per thread data
     Node* volatile root;                                    //
 
-    volatile double abortNum;
+	ALIGN(64) volatile long abortNum;
 
     BST(UINT);                                              // constructor
     ~BST();                                                 // destructor
@@ -1225,7 +1225,9 @@ int main(int argc, char* argv[]) {
         STAT1(cout << setw(8) << "commit");
 #endif
         STAT16(cout << setw(7) << "tt");
-	cout << endl;
+        cout << setw(7) << "abort%" << setw(7) << "#Abort" << setw(7) << "N-A" << setw(7) << "(N-A)/N";
+        cout << endl;
+
 
         cout << setw(keyw - 1) << "------" << setw(3) << "--";          // maxKey nt
 #ifdef PREFILL
@@ -1275,6 +1277,7 @@ int main(int argc, char* argv[]) {
                 // wait for ALL worker threads to finish
                 //
                 waitForThreadsToFinish(nt, threadH);
+                cout << "ALL threads finished" << endl;
                 UINT64 rt = getWallClockMS() - t0;
                 //
                 // calculate results
@@ -1373,7 +1376,10 @@ int main(int argc, char* argv[]) {
                 STAT16(cout << setw(7) << fixed << setprecision(tt < 100*1000 ? 2 : 0) << (double) tt / 1000);
 
 #if METHOD == 3
-	cout << setw(10) << fixed << 100.00*(r[rindx].nop - r[rindx].aborts)/r[rindx].nop << "% " << setw(7) << fixed << r[rindx].aborts;
+	long nopAbortDiff = r[rindx].nop - r[rindx].aborts;
+	long abortPercent = nopAbortDiff/r[rindx].nop;
+	cout << setw(7) << fixed << 100.00*(abortPercent) << "% " << endl;
+14	cout  << r[rindx].nop << setw(14) << fixed << r[rindx].aborts << setw(7) << fixed <<  nopAbortDiff << setw(7) << fixed << abortPercent;
 #endif
 
                 //
