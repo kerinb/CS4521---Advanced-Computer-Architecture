@@ -127,7 +127,7 @@ typedef struct {
     UINT64 ntree;                               // nodes in tree
     UINT64 tt;                                  // total time (ms) [fill time] + test run time + free memory time
     UINT64 aborts;
-    UINT64 commit;
+    UINT64 commits;
 } Result;
 
 Result *r, *ravg;                               // for results
@@ -1384,6 +1384,7 @@ int main(int argc, char* argv[]) {
                 //
                 // tidy up
                 //
+                
                 for (UINT thread = 0; thread < nt; thread++)
                     closeThread(threadH[thread]);
 
