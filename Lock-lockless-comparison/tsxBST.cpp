@@ -385,23 +385,19 @@ int BST::contains(INT64 key) {
 		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
 		} else { // otherwise, grab a lock
-			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){				 
-				abortNum++;																
+			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){				 													
 				do {																		
 					_mm_pause();														
 				} while (lock == 1);													
 			}
-		}
-		cout << "test " << endl;		
+		}		
 		if (status == _XBEGIN_STARTED){ // If I can transact
-			cout << "transaction begin " << endl;
 			if(state == TRANSACTION && lock){ 
 				_xabort(0xA0); // abort if lock is already set
 			} else {
 				break;
 			}
 		} else {
-			cout << "transaction fail " << endl;
 			// the transaction aborted
 			if(lock){
 				do{
@@ -413,7 +409,6 @@ int BST::contains(INT64 key) {
 			}
 			
 			if (++attempt >= MAXATTEMPT) {
-				cout << "attempt " << attempt << endl;
 				state = LOCK; // execute non transactionally by obtaining lock
 			}
 		}
@@ -441,6 +436,7 @@ int BST::contains(INT64 key) {
 		commitNum++;
 		_xend();
 	} else {
+		abortNum++;
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
@@ -461,6 +457,7 @@ int BST::contains(INT64 key) {
 		commitNum++;
 		_xend();
 	} else {
+		abortNum++;
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
@@ -504,8 +501,7 @@ int BST::addTSX(Node *n) {
 		if (state == TRANSACTION){ // If I can transact
 			status = _xbegin();
 		} else { // otherwise, grab a lock
-			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
-				abortNum++;																
+			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){					
 				do {																		
 					_mm_pause();														
 				} while (lock == 1);													
@@ -557,6 +553,7 @@ int BST::addTSX(Node *n) {
 		commitNum++;
 		_xend();
 	} else {
+		abortNum++;
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
@@ -579,6 +576,7 @@ int BST::addTSX(Node *n) {
 		commitNum++;
 		_xend();
 	} else {
+		abortNum++;
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
@@ -622,8 +620,6 @@ Node* BST::removeTSX(INT64 key) {
 			status = _xbegin();
 		} else { // otherwise, grab a lock
 			while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
-				abortNum++;	
-												
 				do {																		
 					_mm_pause();														
 				} while (lock == 1);													
@@ -681,6 +677,7 @@ Node* BST::removeTSX(INT64 key) {
 		commitNum++;
 		_xend();
 	} else {
+		abortNum++;
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
@@ -727,6 +724,7 @@ Node* BST::removeTSX(INT64 key) {
 		commitNum++;
 		_xend();
 	} else {
+		abortNum++;
 	   	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
 	}
 #endif
@@ -1218,7 +1216,7 @@ int main(int argc, char* argv[]) {
 #if METHOD > 1
         STAT1(cout << setw(8) << "commit");
 #endif
-        STAT16(cout << setw(7) << "tt");
+        STAT16(cout << setw(9) << "tt");
 #if METHOD == 3
 	cout << setw(14) << fixed << "No Abort %";
 #endif
@@ -1241,7 +1239,7 @@ int main(int argc, char* argv[]) {
 #if METHOD > 1 
         STAT1(cout << setw(8) << "------");
 #endif
-        STAT16(cout << setw(7) << "--");                                // tt
+        STAT16(cout << setw(9) << "--");                                // tt
         cout << endl;
 
         rindx = 0;                                                      // zero results index
@@ -1368,7 +1366,7 @@ int main(int argc, char* argv[]) {
                 STAT4(cout << fixed << setprecision(2) << setw(keyw) << setprecision(davgD < 1000 ? 2 : 0) << davgD << setw(keyw) << maxD);
 
 #if METHOD == 3
-		cout << setw(7) << fixed << r[rindx].commits;
+		cout << setw(12) << fixed << r[rindx].commits;
 #endif
 
                 UINT64 tt = getWallClockMS() - t0;
