@@ -26,11 +26,11 @@ using namespace std;
 // METHOD 3: RTM
 //
 int T = 0;
-#define METHOD              3
+#define METHOD              2
 #define PREFILL             0                   // pre-fill with odd integers 0 .. maxKey-1 => 0: perfect 1: right list 2: left list
 #define TRANSACTION			0
 #define LOCK				1
-#define MAXATTEMPT			5
+#define MAXATTEMPT			100
 
 #define MINKEY              (16)               
 #define MAXKEY              (1*M)              
@@ -42,8 +42,8 @@ int T = 0;
 
 #define STATS               0x17                // STATS bit MASK 1:commit 2:abort 4:depth 8:tsxStatus 16:times
 
-#define ALIGNED                              
-#define RECYCLENODES                         
+#define ALIGNED             1
+#define RECYCLENODES        1                
 
 //#define CONTAINS          100                 // % contains (100-contains)/2 adds and removes
 #define NOP                 1000                // number of operations between tests for exceeding runtime
@@ -356,6 +356,7 @@ BST::~BST() {
 // METHOD 0: NO lock single thread
 // METHOD 1: testAndTestAndSet
 // METHOD 2: HLE testAndTestAndSet
+// METHOD 3: RTM
 //
 // return 1 if key in tree
 //
@@ -369,15 +370,13 @@ int BST::contains(INT64 key) {
             _mm_pause();
         } while (lock);
     }
-#endif
-#if METHOD == 2
+#elif METHOD == 2
     while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
 		do {																		
 			_mm_pause();														
 		} while (lock == 1);													
 	}
-#endif
-#if METHOD == 3
+#elif METHOD == 3
 	int state = TRANSACTION;
 	int attempt = 1;
 	while(1){ // while I dont have a lock/ ability to commit transaction
@@ -427,11 +426,9 @@ int BST::contains(INT64 key) {
         
 #if METHOD == 1
     lock = 0;
-#endif
-#if METHOD == 2
+#elif METHOD == 2
    	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#endif
-#if METHOD == 3
+#elif METHOD == 3
 	if(state == TRANSACTION){
 		commitNum++;
 		_xend();
@@ -448,11 +445,9 @@ int BST::contains(INT64 key) {
 
 #if METHOD == 1
     lock = 0;
-#endif
-#if METHOD == 2
+#elif METHOD == 2
 	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#endif
-#if METHOD == 3
+#elif METHOD == 3
 	if(state == TRANSACTION){
 		commitNum++;
 		_xend();
@@ -485,15 +480,13 @@ int BST::addTSX(Node *n) {
             _mm_pause();
         } while (lock);
     }
-#endif
-#if METHOD == 2
+#elif METHOD == 2
     while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
 		do {																		
 			_mm_pause();														
 		} while (lock == 1);													
 	}
-#endif
-#if METHOD == 3
+#elif METHOD == 3
 	int state = TRANSACTION;
 	int attempt = 1;
 	while(1){ // while I dont have a lock/ ability to commit transaction
@@ -544,11 +537,9 @@ int BST::addTSX(Node *n) {
         } else {
 #if METHOD == 1
             lock = 0;
-#endif
-#if METHOD == 2
+#elif METHOD == 2
    	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#endif
-#if METHOD == 3
+#elif METHOD == 3
 	if(state == TRANSACTION){
 		commitNum++;
 		_xend();
@@ -567,11 +558,9 @@ int BST::addTSX(Node *n) {
     *pp = n;
 #if METHOD == 1
     lock = 0;
-#endif
-#if METHOD == 2
+#elif METHOD == 2
 	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#endif
-#if METHOD == 3
+#elif METHOD == 3
 	if(state == TRANSACTION){
 		commitNum++;
 		_xend();
@@ -603,15 +592,13 @@ Node* BST::removeTSX(INT64 key) {
             _mm_pause();
         } while (lock);
     }
-#endif
-#if METHOD == 2
+#elif METHOD == 2
     while (__atomic_exchange_n(&lock, 1, __ATOMIC_ACQUIRE | __ATOMIC_HLE_ACQUIRE)){																			
 		do {																		
 			_mm_pause();														
 		} while (lock == 1);													
 	}
-#endif
-#if METHOD == 3
+#elif METHOD == 3
 	int state = TRANSACTION;
 	int attempt = 1;
 	while(1){ // while I dont have a lock/ ability to commit transaction
@@ -668,11 +655,9 @@ Node* BST::removeTSX(INT64 key) {
     if (p == NULL) {
 #if METHOD == 1
         lock = 0;
-#endif
-#if METHOD == 2
+#elif METHOD == 2
 	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#endif
-#if METHOD == 3
+#elif METHOD == 3
 	if(state == TRANSACTION){
 		commitNum++;
 		_xend();
@@ -715,11 +700,9 @@ Node* BST::removeTSX(INT64 key) {
 
 #if METHOD == 1
     lock = 0;
-#endif
-#if METHOD == 2
+#elif METHOD == 2
 	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#endif
-#if METHOD == 3
+#elif METHOD == 3
 	if(state == TRANSACTION){
 		commitNum++;
 		_xend();
@@ -1218,7 +1201,7 @@ int main(int argc, char* argv[]) {
 #endif
         STAT16(cout << setw(9) << "tt");
 #if METHOD == 3
-	cout << setw(14) << fixed << "No Abort %";
+	cout << setw(14) << fixed << "Commit%" << setw(14) << fixed << "Abort%";
 #endif
 	cout << endl;
 
@@ -1376,7 +1359,8 @@ int main(int argc, char* argv[]) {
                 STAT16(cout << setw(7) << fixed << setprecision(tt < 100*1000 ? 2 : 0) << (double) tt / 1000);
 
 #if METHOD == 3
-		cout << setw(10) << fixed << setprecision(4) << 100.00*((double) r[rindx].nop - (double) r[rindx].aborts)/(double)r[rindx].nop << "% " << setw(7) << fixed << r[rindx].aborts;
+		double commit = 100.00*((double) r[rindx].nop - (double) r[rindx].aborts)/(double) r[rindx].nop;
+		cout << setw(10) << fixed << setprecision(4) << commit << "%" << setw(14) << fixed << setprecision(4) << 100.00 - commit ;
 #endif
 
                 //
