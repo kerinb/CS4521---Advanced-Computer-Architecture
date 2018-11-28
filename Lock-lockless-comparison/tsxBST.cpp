@@ -20,9 +20,6 @@ using namespace std;
 // METHOD 0: no lock single thread
 // METHOD 1: testAndTestAndSet lock
 // METHOD 2: HLE testAndTestAndSet lock
-//
-// TODO TODO TODO TODO TODO TODO TODO TODO TODO
-//
 // METHOD 3: RTM
 //
 int T = 0;
@@ -428,7 +425,9 @@ int BST::contains(INT64 key) {
     lock = 0;
 #elif METHOD == 2
    	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#elif METHOD == 3
+   	commitNum++;
+#endif
+#if METHOD == 3
 	if(state == TRANSACTION){
 		commitNum++;
 		_xend();
@@ -447,7 +446,9 @@ int BST::contains(INT64 key) {
     lock = 0;
 #elif METHOD == 2
 	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#elif METHOD == 3
+	commitNum++;
+#endif
+#if METHOD == 3
 	if(state == TRANSACTION){
 		commitNum++;
 		_xend();
@@ -539,7 +540,9 @@ int BST::addTSX(Node *n) {
             lock = 0;
 #elif METHOD == 2
    	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#elif METHOD == 3
+   	commitNum++;
+#endif
+#if METHOD == 3
 	if(state == TRANSACTION){
 		commitNum++;
 		_xend();
@@ -560,7 +563,9 @@ int BST::addTSX(Node *n) {
     lock = 0;
 #elif METHOD == 2
 	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#elif METHOD == 3
+	commitNum++;
+#endif
+#if METHOD == 3
 	if(state == TRANSACTION){
 		commitNum++;
 		_xend();
@@ -657,7 +662,9 @@ Node* BST::removeTSX(INT64 key) {
         lock = 0;
 #elif METHOD == 2
 	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#elif METHOD == 3
+	commitNum++;
+#endif
+#if METHOD == 3
 	if(state == TRANSACTION){
 		commitNum++;
 		_xend();
@@ -702,7 +709,9 @@ Node* BST::removeTSX(INT64 key) {
     lock = 0;
 #elif METHOD == 2
 	__atomic_store_n(&lock, 0, __ATOMIC_RELEASE | __ATOMIC_HLE_RELEASE);
-#elif METHOD == 3
+	commitNum++;
+#endif
+#if METHOD == 3
 	if(state == TRANSACTION){
 		commitNum++;
 		_xend();
@@ -1357,7 +1366,9 @@ int main(int argc, char* argv[]) {
                 tt += pft;
 #endif
                 STAT16(cout << setw(7) << fixed << setprecision(tt < 100*1000 ? 2 : 0) << (double) tt / 1000);
-
+#if METHOD == 2
+		cout << setw(7) << fixed << r[rindx].commits;
+#endif
 #if METHOD == 3
 		double commit = 100.00*((double) r[rindx].nop - (double) r[rindx].aborts)/(double) r[rindx].nop;
 		cout << setw(10) << fixed << setprecision(4) << commit << "%" << setw(14) << fixed << setprecision(4) << 100.00 - commit ;
